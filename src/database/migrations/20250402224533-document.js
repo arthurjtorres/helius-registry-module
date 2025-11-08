@@ -41,6 +41,10 @@ module.exports = {
           type: Sequelize.DATEONLY,
           allowNull: false,
         },
+        validation_date: {
+          type: Sequelize.DATEONLY,
+          allowNull: true,
+        },
         mother_name: {
           type: Sequelize.STRING,
           allowNull: false,

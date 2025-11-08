@@ -14,6 +14,7 @@ class DocumentModel extends Model {
   declare orgEmitter: string;
   declare uf: string;
   declare issueDate: Date
+  declare validationDate?: Date
   declare motherName: string;
   declare fatherName: string;
   declare fkDocumentPersonId: string;
@@ -58,6 +59,10 @@ DocumentModel.init({
   issueDate: {
     type: sequelize.DATEONLY,
     allowNull: false,
+  },
+  validationDate: {
+    type: sequelize.DATEONLY,
+    allowNull: true,
   },
   motherName: {
     type: sequelize.STRING,
