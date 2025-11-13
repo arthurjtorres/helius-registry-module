@@ -13,10 +13,10 @@ services:
       - DB_HOST=${DB_HOST}
       - JWT_SECRET=${JWT_SECRET}
     volumes:
-      - .:/backend-cadastro
-      - /backend-cadastro/node_modules
+      - .:/modulo-cadastro
+      - /modulo-cadastro/node_modules
 
-    container_name: backend-cadastro
+    container_name: modulo-cadastro
     restart: always
 
     networks:
