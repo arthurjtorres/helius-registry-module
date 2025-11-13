@@ -1,0 +1,131 @@
+// VehicleModel
+
+import { DataTypes, Model } from "sequelize";
+import { CameraTypeEnum } from "./enums/CameraTypeEnum";
+import sequelize from "sequelize";
+import db from ".";
+import VehicleTypeModel from "./VehicleTypeModel";
+import CompanyModel from "./CompanyModel";
+
+class VehicleModel extends Model {
+  declare vehicleId: string;
+  declare vehicleName: string;
+  declare licensePlate: string;
+  declare brand: string;
+  declare model: string;
+  declare year: string;
+  declare hasWifi: boolean;
+  declare cameraType: CameraTypeEnum;
+
+  declare createdAt: Date;
+  declare createdBy: string;
+  declare updatedAt: Date;
+  declare updatedBy: string;
+}
+
+VehicleModel.init({
+  vehicleId: {
+    type: DataTypes.UUID,
+    primaryKey: true,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+  },
+  vehicleName: {
+    type: sequelize.STRING,
+    allowNull: false,
+    unique: true,
+  },
+  licensePlate: {
+    type: sequelize.STRING,
+    allowNull: false,
+    unique: true,
+  },
+  brand: {
+    type: sequelize.STRING,
+    allowNull: false,
+  },
+  model: {
+    type: sequelize.STRING,
+    allowNull: false,
+  },
+  year: {
+    type: sequelize.STRING,
+    allowNull: false,
+  },
+  hasWifi: {
+    type: sequelize.BOOLEAN,
+    allowNull: false,
+  },
+  cameraType: {
+    type: sequelize.STRING,
+    allowNull: false,
+    validate: {
+      isIn: [[...Object.values(CameraTypeEnum)]],
+    }
+  },
+  fkVehicleTypeVehicleId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'type_vehicle',
+      key: 'type_vehicle_id',
+    },
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE',
+  },
+  fkVehicleCompanyId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'company',
+      key: 'company_id',
+    },
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE',
+  },
+
+  createdAt: {
+    allowNull: false,
+    type: sequelize.DATE,
+    defaultValue: sequelize.literal("CURRENT_TIMESTAMP"),
+  },
+  createdBy: {
+    allowNull: false,
+    type: DataTypes.UUID,
+
+  },
+  updatedAt: {
+    allowNull: false,
+    type: sequelize.DATE,
+    defaultValue: sequelize.literal("CURRENT_TIMESTAMP"),
+  },
+  updatedBy: {
+    allowNull: false,
+    type: DataTypes.UUID,
+
+  },
+}, {
+  sequelize: db,
+  tableName: 'vehicle',
+  schema: 'registry',
+  timestamps: false,
+  underscored: true
+});
+
+VehicleModel.belongsTo(VehicleTypeModel, {
+  foreignKey: 'fkVehicleTypeVehicleId'
+});
+
+VehicleTypeModel.hasMany(VehicleModel, {
+  foreignKey: 'fkVehicleTypeVehicleId'
+});
+
+VehicleModel.belongsTo(CompanyModel, {
+  foreignKey: 'fkVehicleCompanyId'
+});
+
+CompanyModel.hasMany(VehicleModel, {
+  foreignKey: 'fkVehicleCompanyId'
+});
+
+export default VehicleModel;
