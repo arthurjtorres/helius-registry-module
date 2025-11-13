@@ -1,0 +1,27 @@
+version: "3.9"
+services:
+  application:
+    env_file:
+      - ../.env  # Caminho relativo para a pasta raiz
+    build: .
+    ports: 
+      - "${PORT_API_CADASTRO}:${PORT_API_CADASTRO}"
+    environment:
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - DB_NAME=${DB_NAME}  # Mesma configuração do banco
+      - DB_HOST=${DB_HOST}
+      - JWT_SECRET=${JWT_SECRET}
+    volumes:
+      - .:/backend-cadastro
+      - /backend-cadastro/node_modules
+
+    container_name: backend-cadastro
+    restart: always
+
+    networks:
+      - helius_net
+
+networks:
+  helius_net:
+    external: true
