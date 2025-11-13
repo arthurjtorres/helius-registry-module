@@ -21,9 +21,9 @@ FROM node:lts-alpine3.22
 WORKDIR /modulo-cadastro
 
 # Copiar apenas arquivos essenciais da etapa de build
-COPY --from=builder /package*.json ./
-COPY --from=builder /build ./build
-COPY --from=builder /node_modules ./node_modules
+COPY --from=builder /modulo-cadastro/package*.json ./
+COPY --from=builder /modulo-cadastro/build ./build
+COPY --from=builder /modulo-cadastro/node_modules ./node_modules
 
 # Definir variáveis de ambiente para produção
 ENV NODE_ENV=production
