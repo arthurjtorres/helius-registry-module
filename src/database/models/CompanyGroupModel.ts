@@ -12,6 +12,7 @@ class CompanyGroupModel extends Model {
   declare createdBy: string;
   declare updatedAt: Date;
   declare updatedBy: string;
+  declare activated: boolean;
 }
 
 CompanyGroupModel.init({
@@ -45,6 +46,11 @@ CompanyGroupModel.init({
     allowNull: false,
     type: DataTypes.UUID,
 
+  },
+  activated: {
+    allowNull: false,
+    type: sequelize.BOOLEAN,
+    defaultValue: true,
   },
 },
   {

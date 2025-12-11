@@ -14,6 +14,7 @@ class SectorModel extends Model {
   declare createdBy: string;
   declare updatedAt: Date;
   declare updatedBy: string;
+  declare activated: boolean;
 }
 
 SectorModel.init(
@@ -38,27 +39,32 @@ SectorModel.init(
       unique: true,
       autoIncrement: true, // simbólico
     },
-    
+
     createdAt: {
-        allowNull: false,
-        type: sequelize.DATE,
-        defaultValue: sequelize.literal("CURRENT_TIMESTAMP"),
-      },
-      createdBy: {
-        allowNull: false,
-        type: DataTypes.UUID,
-    
-      },
-      updatedAt: {
-        allowNull: false,
-        type: sequelize.DATE,
-        defaultValue: sequelize.literal("CURRENT_TIMESTAMP"),
-      },
-      updatedBy: {
-        allowNull: false,
-        type: DataTypes.UUID,
-    
-      },
+      allowNull: false,
+      type: sequelize.DATE,
+      defaultValue: sequelize.literal("CURRENT_TIMESTAMP"),
+    },
+    createdBy: {
+      allowNull: false,
+      type: DataTypes.UUID,
+
+    },
+    updatedAt: {
+      allowNull: false,
+      type: sequelize.DATE,
+      defaultValue: sequelize.literal("CURRENT_TIMESTAMP"),
+    },
+    updatedBy: {
+      allowNull: false,
+      type: DataTypes.UUID,
+
+    },
+    activated: {
+      allowNull: false,
+      type: sequelize.BOOLEAN,
+      defaultValue: true,
+    },
   },
   {
     sequelize: db,
