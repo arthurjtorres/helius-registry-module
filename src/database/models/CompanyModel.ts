@@ -18,6 +18,7 @@ class CompanyModel extends Model {
   declare createdBy: string;
   declare updatedAt: Date;
   declare updatedBy: string;
+  declare activated: boolean;
 }
 
 CompanyModel.init(
@@ -82,6 +83,11 @@ CompanyModel.init(
       type: DataTypes.UUID,
 
     },
+    activated: {
+    allowNull: false,
+    type: sequelize.BOOLEAN,
+    defaultValue: true,
+  },
 
   },
   {

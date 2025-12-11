@@ -16,6 +16,7 @@ class LocationModel extends Model {
   declare createdBy: string;
   declare updatedAt: Date;
   declare updatedBy: string;
+  declare activated: boolean;
 }
 
 LocationModel.init({
@@ -40,6 +41,9 @@ LocationModel.init({
       isIn: [[...Object.values(LocationTypeEnum)]],
     }
   },
+  locationAcronym: {
+    type: sequelize.STRING,
+  },
 
   createdAt: {
     allowNull: false,
@@ -61,9 +65,12 @@ LocationModel.init({
     type: DataTypes.UUID,
 
   },
-  locationAcronym: {
-    type: sequelize.STRING,
-  }
+  activated: {
+    allowNull: false,
+    type: sequelize.BOOLEAN,
+    defaultValue: true,
+  },
+  
 }, {
   sequelize: db,
   tableName: 'location',
