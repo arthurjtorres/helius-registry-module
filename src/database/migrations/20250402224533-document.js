@@ -6,17 +6,17 @@ const { DataTypes } = require('sequelize');
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
-  async up (queryInterface, Sequelize) {
+  async up(queryInterface, Sequelize) {
     await queryInterface.createTable(
       'document',
       {
-        document_id :{
+        document_id: {
           type: DataTypes.UUID,
           primaryKey: true,
           defaultValue: DataTypes.UUIDV4,
           allowNull: false,
         },
-        document_type:{
+        document_type: {
           type: Sequelize.STRING,
           allowNull: false
         },
@@ -107,19 +107,24 @@ module.exports = {
         },
       },
       {
-        schema: 'registry'
+        schema: 'registry',
+        uniqueKeys: {
+          unique_document_type_per_person: {
+            fields: ['fk_document_person_id', 'document_type']
+          }
+        }
       }
     );
 
-    await queryInterface.addConstraint('document', {
-      fields: [ 'fk_document_person_id', 'document_type'],
+    /*await queryInterface.addConstraint('document', {
+      fields: ['fk_document_person_id', 'document_type'],
       type: 'unique',
       name: 'unique_document_type_per_person',
       schema: 'registry',
-    })
+    })*/
   },
 
-  async down (queryInterface, Sequelize) {
+  async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('document', {
       schema: 'registry'
     })
