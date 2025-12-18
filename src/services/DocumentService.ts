@@ -11,6 +11,7 @@ class DocumentService {
 
   async createDocument(data: DocumentInterface) {
     data.createdAt = new Date();
+    data.updatedAt = undefined;
     const { error } = CreateValidationSchema.DocumentValidation.validate(data);
     if (error) return Response.badRequest(error.message);
 

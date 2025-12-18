@@ -13,6 +13,7 @@ class VehicleService {
 
   async createVehicle(data: VehicleInterface) {
     data.createdAt = new Date();
+    data.updatedAt = undefined;
     const { error } = CreateValidationSchema.VehicleValidation.validate(data);
     if (error) return Response.badRequest(error.message);
 
