@@ -58,12 +58,12 @@ PersonModel.init({
     defaultValue: sequelize.literal("CURRENT_TIMESTAMP"),
   },
   updatedBy: {
-    allowNull: false,
+    allowNull: true,
     type: DataTypes.UUID,
 
   },
   activated: {
-    allowNull: false,
+    allowNull: true,
     type: sequelize.BOOLEAN,
     defaultValue: true,
   },

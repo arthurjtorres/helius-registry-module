@@ -10,6 +10,7 @@ class DepartmentService {
 
   async createDepartment(data: DepartmentInterface) {
     data.createdAt = new Date();
+    data.updatedAt = undefined;
     const { error } = CreateValidationSchema.DepartmentValidation.validate(data);
     if (error) return Response.badRequest(error.message);
 

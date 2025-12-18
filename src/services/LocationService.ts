@@ -10,6 +10,7 @@ class LocationService {
 
   async createLocation(data: LocationInterface) {
     data.createdAt = new Date();
+    data.updatedAt = undefined;
     const { error } = CreateValidationSchema.LocationValidation.validate(data);
     if (error) return Response.badRequest(error.message);
 

@@ -10,6 +10,7 @@ class CorporationService {
 
   async createCorporation(data: CorporationInterface) {
     data.createdAt = new Date();
+    data.updatedAt = undefined;
     const { error } = CreateValidationSchema.CorporationValidation.validate(data);
     if (error) return Response.badRequest(error.message);
 

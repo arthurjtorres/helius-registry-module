@@ -47,12 +47,12 @@ PositionModel.init(
 
   },
   updatedAt: {
-    allowNull: false,
+    allowNull: true,
     type: sequelize.DATE,
     defaultValue: sequelize.literal("CURRENT_TIMESTAMP"),
   },
   updatedBy: {
-    allowNull: false,
+    allowNull: true,
     type: DataTypes.UUID,
 
   },
