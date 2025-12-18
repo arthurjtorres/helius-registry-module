@@ -10,6 +10,7 @@ class PersonService {
 
   async createPerson(data: PersonInterface) {
     data.createdAt = new Date();
+    data.updatedAt = undefined;
     const { error } = CreateValidationSchema.PersonValidation.validate(data);
     if (error) return Response.badRequest(error.message);
 
