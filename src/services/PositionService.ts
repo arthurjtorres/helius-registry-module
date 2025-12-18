@@ -10,6 +10,7 @@ class PositionService {
 
   async createPosition(data: PositionInterface) {
     data.createdAt = new Date();
+    data.updatedAt = undefined;
     const { error } = CreateValidationSchema.PositionValidation.validate(data);
     if (error) return Response.badRequest(error.message);
 
