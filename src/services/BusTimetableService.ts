@@ -12,7 +12,7 @@ class BusTimetableService {
 
   async createBusTimetable(data: BusTimetableInterface) {
     data.createdAt = new Date();    
-    data.updatedAt = undefined;
+    
     const { error } = CreateValidationSchema.BusTimetableValidation.validate(data);
 
     if (error) return Response.badRequest(error.message);
