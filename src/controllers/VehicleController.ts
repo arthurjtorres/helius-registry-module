@@ -56,6 +56,17 @@ class VehicleController {
       return res.status(500).json("Erro interno ao buscar veículos.");
     }
   }
+
+  async getVehiclesByIds(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { ids } = req.body; // Espera um array de strings no body
+    const result = await this.service.getVehiclesByIds(ids);
+    return res.status(result.status).json(result);
+  } catch (error) {
+    console.error("Erro em getVehiclesByIds:", error);
+    return res.status(500).json("Erro interno ao buscar veículos em lote.");
+  }
+}
 }
 
 export default VehicleController;
