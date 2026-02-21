@@ -16,6 +16,8 @@ class VehicleModel extends Model {
   declare year: string;
   declare hasWifi: boolean;
   declare cameraType: CameraTypeEnum;
+  declare fkVehicleTypeVehicleId: string;
+  declare fkVehicleCompanyId: string;
 
   declare createdAt: Date;
   declare createdBy: string;
