@@ -9,5 +9,6 @@ vehicleRouter.put("/:id", controller.updateVehicle.bind(controller));
 vehicleRouter.delete("/:id", controller.deleteVehicle.bind(controller));
 vehicleRouter.get("/:id", controller.getVehicle.bind(controller));
 vehicleRouter.get("/", controller.findVehicles.bind(controller));
+vehicleRouter.post("/bulk", controller.getVehiclesByIds.bind(controller));
 
 export default vehicleRouter;

@@ -90,6 +90,24 @@ class VehicleService {
 
     return Response.ok("Veículos encontrados com sucesso", result);
   }
+
+  async getVehiclesByIds(ids: string[]) {
+    if (!ids || ids.length === 0) return Response.badRequest("Lista de IDs não informada.");
+
+    const result = await this.model.findAll({
+      where: {
+        vehicleId: {
+          [Op.in]: ids
+        }
+      },
+      include: [VehicleModel, CompanyModel]
+    });
+
+    if (!result.length) return Response.notFound("Nenhum veículo encontrado para os IDs fornecidos.");
+
+    return Response.ok("Veículos encontrados com sucesso!", result);
+  }
+
 }
 
 export default VehicleService;
