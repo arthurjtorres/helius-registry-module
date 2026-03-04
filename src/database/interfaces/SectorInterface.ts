@@ -8,4 +8,5 @@ export default interface SectorInterface {
   createdBy: string;
   updatedAt?: Date;
   updatedBy?: string;
+  activated?: boolean;
 }

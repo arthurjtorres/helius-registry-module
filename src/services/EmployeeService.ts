@@ -1,25 +1,22 @@
 import { ModelStatic, Op } from "sequelize";
 import { parse } from "date-fns";
-import { v4 as uuidv4 } from "uuid";
-import EmployeeModel from "../database/models/EmployeeModel";
-import PersonModel from "../database/models/PersonModel";
+
+import Response from "../utils/Response";
 import CreateValidationSchema from "./validations/CreateValidationSchema";
 import UpdateValidationSchema from "./validations/UpdateValidationSchema";
-import Response from "../utils/Response";
+
+import { EmployeeModel, PersonModel, CompanyModel, PositionModel, SectorModel, DepartmentModel } from "../database/models";
 import EmployeeInterface from "../database/interfaces/EmployeeInterface";
+
 import PersonService from "./PersonService";
-import CompanyModel from "../database/models/CompanyModel";
-import PositionModel from "../database/models/PositionModel";
 import PositionService from "./PositionService";
-import SectorModel from "../database/models/SectorModel";
-import DepartmentModel from "../database/models/DepartmentModel";
 
 class EmployeeService {
   private model: ModelStatic<EmployeeModel> = EmployeeModel;
 
-  async createEmployee(data: EmployeeInterface) {        
+  async createEmployee(data: EmployeeInterface) {
     data.createdAt = new Date();
-    
+
     const { error } = CreateValidationSchema.EmployeeValidation.validate(data);
     if (error) return Response.badRequest(error.message);
 
@@ -27,21 +24,26 @@ class EmployeeService {
     return Response.created("Funcionário criado com sucesso!");
   }
 
-  async updateEmployee(employeeId: string, data: Partial<EmployeeInterface>) {
-    data.updatedAt = new Date();
-    if (!employeeId) return Response.badRequest("ID não informado");
+  async updateEmployee(id: string, data: Partial<EmployeeInterface>) {
 
-    const { error } = UpdateValidationSchema.UpdateValidation.validate(data);
+    if (!IDBDatabase) return Response.badRequest("ID não informado");
+    data.updatedAt = new Date();
+
+    const { error } = UpdateValidationSchema.EmployeeValidation.validate(data);
     if (error) return Response.badRequest(error.message);
 
-    const [updated] = await this.model.update(data, {
-      where: { employeeId },
-    });
+    const [updated] = await this.model.update(data, { where: { employeeId: id } });
 
     if (!updated) return Response.notFound("Funcionário não encontrado!");
 
-    const result = await this.model.findByPk(employeeId, {
-      include: [PersonModel, CompanyModel, PositionModel, SectorModel, DepartmentModel],
+    const result = await this.model.findByPk(id, {
+      include: [
+        { model: PersonModel, as: 'Person' },
+        { model: CompanyModel, as: 'Company'},
+        { model: PositionModel, as: 'Position' },
+        { model: SectorModel, as: 'Sector' },
+        { model: DepartmentModel, as: 'Department' }
+      ],
     });
 
     return Response.ok("Funcionário atualizado com sucesso!", result);
@@ -57,7 +59,13 @@ class EmployeeService {
     if (!id) return Response.badRequest("ID do funcionário não informado.");
 
     const result = await this.model.findByPk(id, {
-      include: [PersonModel, CompanyModel, PositionModel, SectorModel, DepartmentModel],
+      include: [
+        { model: PersonModel, as: 'Person' },
+        { model: CompanyModel, as: 'Company'},
+        { model: PositionModel, as: 'Position' },
+        { model: SectorModel, as: 'Sector' },
+        { model: DepartmentModel, as: 'Department' }
+      ],
     });
 
     if (!result) return Response.notFound("Funcionário não encontrado!");
@@ -71,14 +79,19 @@ class EmployeeService {
       where.registration = { [Op.iLike]: `%${query.registration}%` };
     }
 
-    if (query.fkEmployeePersonId) {
-      where.fkEmployeePersonId = query.fkEmployeePersonId;
+    if (query.fkPersonId) {
+      where.fkEmployeePersonId = query.fkPersonId;
     }
 
     const result = await this.model.findAll({
       where,
-      include: [PersonModel, CompanyModel, PositionModel, SectorModel, DepartmentModel],
-      
+      include: [
+        { model: PersonModel, as: 'Person' },
+        { model: CompanyModel, as: 'Company'},
+        { model: PositionModel, as: 'Position' },
+        { model: SectorModel, as: 'Sector' },
+        { model: DepartmentModel, as: 'Department' }
+      ],
     });
 
     if (!result.length) {
@@ -136,7 +149,7 @@ class EmployeeService {
 
       const firstName = nameParts[0];
       const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
-      
+
       const parsedAdmissionDate = parse(admissionDate, "dd/MM/yyyy", new Date());
       const parsedBirthDate = parse(birthDate, "dd/MM/yyyy", new Date());
 

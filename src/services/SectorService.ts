@@ -1,9 +1,10 @@
 import { ModelStatic, Op } from "sequelize";
-import SectorModel from "../database/models/SectorModel";
-import DepartmentModel from "../database/models/DepartmentModel";
+import Response from "../utils/Response";
+
 import CreateValidationSchema from "./validations/CreateValidationSchema";
 import UpdateValidationSchema from "./validations/UpdateValidationSchema";
-import Response from "../utils/Response";
+
+import { SectorModel } from "../database/models";
 import SectorInterface from "../database/interfaces/SectorInterface";
 
 class SectorService {
@@ -11,7 +12,7 @@ class SectorService {
 
   async createSector(data: SectorInterface) {
     data.createdAt = new Date();
-    
+
     const { error } = CreateValidationSchema.SectorValidation.validate(data);
     if (error) return Response.badRequest(error.message);
 
@@ -19,19 +20,17 @@ class SectorService {
     return Response.created("Setor criado com sucesso!");
   }
 
-  async updateSector(sectorId: string, data: Partial<SectorInterface>) {
+  async updateSector(id: string, data: Partial<SectorInterface>) {
     data.updatedAt = new Date();
-    if (!sectorId) return Response.badRequest("ID não informado");
+    if (!id) return Response.badRequest("ID não informado");
 
-    const { error } = UpdateValidationSchema.UpdateValidation.validate(data);
+    const { error } = UpdateValidationSchema.SectorValidation.validate(data);
     if (error) return Response.badRequest(error.message);
 
-    const [updated] = await this.model.update(data, { where: { sectorId } });
+    const [updated] = await this.model.update(data, { where: { sectorId: id } });
     if (!updated) return Response.notFound("Setor não encontrado!");
 
-    const result = await this.model.findByPk(sectorId, {
-      include: [DepartmentModel],
-    });
+    const result = await this.model.findByPk(id);
 
     return Response.ok("Setor atualizado com sucesso!", result);
   }
@@ -46,9 +45,7 @@ class SectorService {
   async getSector(id: string) {
     if (!id) return Response.badRequest("ID do setor não informado.");
 
-    const result = await this.model.findByPk(id, {
-      include: [DepartmentModel],
-    });
+    const result = await this.model.findByPk(id);
 
     if (!result) return Response.notFound("Setor não encontrado!");
     return Response.ok("Setor encontrado!", result);
@@ -58,7 +55,6 @@ class SectorService {
     sectorName?: string;
     sectorAlias?: string;
     sectorIndex?: number;
-    //fkSectorDepartmentId?: string;
   }) {
     const where: any = {};
 
@@ -74,13 +70,8 @@ class SectorService {
       where.sectorIndex = query.sectorIndex;
     }
 
-    /*if (query.fkSectorDepartmentId) {
-      where.fkSectorDepartmentId = query.fkSectorDepartmentId;
-    }*/
-
     const result = await this.model.findAll({
       where,
-      //include: [DepartmentModel],
     });
 
     if (!result.length) {

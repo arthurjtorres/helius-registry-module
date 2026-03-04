@@ -3,12 +3,13 @@ export default interface CompanyInterface {
   companyName: string;
   companyCode?: string;
   companyAcronym: string;
-  fkCompanyCorporationId: string;
+  fkCorporationId: string;
   fkCompanyGroupId: string;
 
   createdAt: Date;
   createdBy: string;
   updatedAt?: Date;
   updatedBy?: string;
+  activated?: boolean;
 }
 

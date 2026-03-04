@@ -7,5 +7,6 @@ export default interface PositionInterface {
   createdBy: string;
   updatedAt?: Date;
   updatedBy?: string;
+  activated?: boolean;
 }
 

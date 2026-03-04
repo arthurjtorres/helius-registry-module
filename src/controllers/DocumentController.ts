@@ -6,7 +6,12 @@ class DocumentController {
 
   async createDocument(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await this.service.createDocument(req.body);
+      const user = res.locals.user;
+      const data = {
+        ...req.body,
+        createdBy: user.userId
+      }
+      const result = await this.service.createDocument(data);
       return res.status(result.status).json(result);
     } catch (error) {
       console.error("Erro em createDocument:", error);
@@ -16,8 +21,13 @@ class DocumentController {
 
   async updateDocument(req: Request, res: Response, next: NextFunction) {
     try {
+      const user = res.locals.user;
+      const data = {
+        ...req.body,
+        updatedBy: user.userId
+      }
       const { id } = req.params;
-      const result = await this.service.updateDocument(id, req.body);
+      const result = await this.service.updateDocument(id, data);
       return res.status(result.status).json(result);
     } catch (error) {
       console.error("Erro em updateDocument:", error);

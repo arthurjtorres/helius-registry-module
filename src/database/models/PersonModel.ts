@@ -1,8 +1,8 @@
 // PersonModel
 
-import sequelize from "sequelize";
 import { DataTypes, Model } from "sequelize";
-import db from ".";
+import db from "./database";
+import sequelize from "sequelize";
 
 class PersonModel extends Model {
   declare personId: string;

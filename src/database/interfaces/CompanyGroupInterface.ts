@@ -6,5 +6,6 @@ export default interface CompanyGroupInterface {
   createdBy: string;
   updatedAt?: Date;
   updatedBy?: string;
+  activated?: boolean;
 }
 

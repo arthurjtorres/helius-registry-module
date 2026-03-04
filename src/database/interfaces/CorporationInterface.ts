@@ -8,4 +8,5 @@ export default interface CorporationInterface {
   createdBy: string;
   updatedAt?: Date;
   updatedBy?: string;
+  activated?: boolean;
 }
