@@ -6,7 +6,12 @@ class PersonController {
 
   async createPerson(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await this.service.createPerson(req.body);
+      const user = res.locals.user;
+      const data = {
+        ...req.body,
+        createdBy: user.userId
+      }
+      const result = await this.service.createPerson(data);
       return res.status(result.status).json(result);
     } catch (error) {
       console.error("Erro em createPerson:", error);
@@ -16,8 +21,13 @@ class PersonController {
 
   async updatePerson(req: Request, res: Response, next: NextFunction) {
     try {
+      const user = res.locals.user;
+      const data = {
+        ...req.body,
+        updatedBy: user.userId
+      }
       const { id } = req.params;
-      const result = await this.service.updatePerson(id, req.body);
+      const result = await this.service.updatePerson(id, data);
       return res.status(result.status).json(result);
     } catch (error) {
       console.error("Erro em updatePerson:", error);

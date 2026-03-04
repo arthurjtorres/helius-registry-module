@@ -1,28 +1,27 @@
 // DocumentModel
 
 import { DataTypes, Model } from "sequelize";
-import { DocumentTypeEnum } from "./enums/DocumentTypeEnum";
-import db from ".";
+import db from "./database";
 import sequelize from "sequelize";
-import PersonModel from "./PersonModel";
+import { DocumentTypeEnum } from "./enums/DocumentTypeEnum";
 
 class DocumentModel extends Model {
   declare documentId: string;
   declare documentType: DocumentTypeEnum;
   declare documentNumber: string;
-  declare documentPhoto: Blob;
-  declare orgEmitter: string;
-  declare uf: string;
-  declare issueDate: Date
+  declare documentPhoto?: Blob;
+  declare orgEmitter?: string;
+  declare uf?: string;
+  declare issueDate?: Date
   declare validationDate?: Date
-  declare motherName: string;
-  declare fatherName: string;
-  declare fkDocumentPersonId: string;
+  declare motherName?: string;
+  declare fatherName?: string;
+  declare fkPersonId: string;
 
   declare createdAt: Date;
   declare createdBy: string;
-  declare updatedAt: Date;
-  declare updatedBy: string;
+  declare updatedAt?: Date;
+  declare updatedBy?: string;
   declare activated: boolean;
 }
 
@@ -51,15 +50,15 @@ DocumentModel.init({
   },
   orgEmitter: {
     type: sequelize.STRING,
-    allowNull: false,
+    allowNull: true,
   },
   uf: {
     type: sequelize.STRING,
-    allowNull: false,
+    allowNull: true,
   },
   issueDate: {
     type: sequelize.DATEONLY,
-    allowNull: false,
+    allowNull: true,
   },
   validationDate: {
     type: sequelize.DATEONLY,
@@ -67,13 +66,13 @@ DocumentModel.init({
   },
   motherName: {
     type: sequelize.STRING,
-    allowNull: false,
+    allowNull: true,
   },
   fatherName: {
     type: sequelize.STRING,
     allowNull: true,
   },
-  fkDocumentPersonId: {
+  fkPersonId: {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
@@ -115,14 +114,6 @@ DocumentModel.init({
   schema: 'registry',
   timestamps: false,
   underscored: true
-});
-
-DocumentModel.belongsTo(PersonModel, {
-  foreignKey: 'fkDocumentPersonId'
-});
-
-PersonModel.hasMany(DocumentModel, {
-  foreignKey: 'fkDocumentPersonId'
 });
 
 export default DocumentModel;

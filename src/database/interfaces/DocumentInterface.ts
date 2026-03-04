@@ -4,18 +4,19 @@ export default interface DocumentInterface {
   documentId?: string;
   documentType: DocumentTypeEnum;
   documentNumber: string;
-  documentPhoto: Blob;
-  orgEmitter: string;
-  uf: string;
-  issueDate: Date;
+  documentPhoto?: Blob;
+  orgEmitter?: string;
+  uf?: string;
+  issueDate?: Date;
   validationDate?: Date;
-  motherName: string;
+  motherName?: string;
   fatherName?: string;
-  fkDocumentPersonId: string;
+  fkPersonId: string;
 
   createdAt: Date;
   createdBy: string;
   updatedAt?: Date;
   updatedBy?: string;
+  activated?: boolean;
 }
 

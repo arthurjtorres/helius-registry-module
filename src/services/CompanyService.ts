@@ -1,10 +1,10 @@
 import { ModelStatic, Op } from "sequelize";
-import CompanyModel from "../database/models/CompanyModel";
-import CorporationModel from "../database/models/CorporationModel";
-import CompanyGroupModel from "../database/models/CompanyGroupModel";
+import Response from "../utils/Response";
+
 import CreateValidationSchema from "./validations/CreateValidationSchema";
 import UpdateValidationSchema from "./validations/UpdateValidationSchema";
-import Response from "../utils/Response";
+
+import { CompanyModel, CorporationModel, CompanyGroupModel } from "../database/models";
 import CompanyInterface from "../database/interfaces/CompanyInterface";
 
 class CompanyService {
@@ -12,7 +12,7 @@ class CompanyService {
 
   async createCompany(data: CompanyInterface) {
     data.createdAt = new Date();
-    
+
     const { error } = CreateValidationSchema.CompanyValidation.validate(data);
     if (error) return Response.badRequest(error.message);
 
@@ -20,18 +20,22 @@ class CompanyService {
     return Response.created("Empresa criada com sucesso!");
   }
 
-  async updateCompany(companyId: string, data: Partial<CompanyInterface>) {
-    data.updatedAt = new Date();
-    if (!companyId) return Response.badRequest("ID não informado");
+  async updateCompany(id: string, data: Partial<CompanyInterface>) {
 
-    const { error } = UpdateValidationSchema.UpdateValidation.validate(data);
+    if (!id) return Response.badRequest("ID não informado");
+    data.updatedAt = new Date();
+
+    const { error } = UpdateValidationSchema.CompanyValidation.validate(data);
     if (error) return Response.badRequest(error.message);
 
-    const [updated] = await this.model.update(data, { where: { companyId } });
+    const [updated] = await this.model.update(data, { where: { companyId: id } });
     if (!updated) return Response.notFound("Empresa não encontrada!");
 
-    const result = await this.model.findByPk(companyId, {
-      include: [CorporationModel, CompanyGroupModel],
+    const result = await this.model.findByPk(id, {
+      include: [
+        { model: CorporationModel, as: 'Corporation' },
+        { model: CompanyGroupModel, as: 'CompanyGroup' }
+      ],
     });
 
     return Response.ok("Empresa atualizada com sucesso!", result);
@@ -48,7 +52,10 @@ class CompanyService {
     if (!id) return Response.badRequest("ID da empresa não informado.");
 
     const result = await this.model.findByPk(id, {
-      include: [CorporationModel, CompanyGroupModel],
+      include: [
+        { model: CorporationModel, as: 'Corporation' },
+        { model: CompanyGroupModel, as: 'CompanyGroup' }
+      ],
     });
 
     if (!result) return Response.notFound("Empresa não encontrada!");
@@ -86,7 +93,10 @@ class CompanyService {
 
     const result = await this.model.findAll({
       where,
-      include: [CorporationModel, CompanyGroupModel],
+      include: [
+        { model: CorporationModel, as: 'Corporation' },
+        { model: CompanyGroupModel, as: 'CompanyGroup' }
+      ],
     });
 
     if (!result.length) {

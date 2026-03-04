@@ -1,8 +1,10 @@
 import { ModelStatic, Op } from "sequelize";
-import CorporationModel from "../database/models/CorporationModel";
+import Response from "../utils/Response";
+
 import CreateValidationSchema from "./validations/CreateValidationSchema";
 import UpdateValidationSchema from "./validations/UpdateValidationSchema";
-import Response from "../utils/Response";
+
+import { CorporationModel } from "../database/models";
 import CorporationInterface from "../database/interfaces/CorporationInterface";
 
 class CorporationService {
@@ -10,7 +12,7 @@ class CorporationService {
 
   async createCorporation(data: CorporationInterface) {
     data.createdAt = new Date();
-    
+
     const { error } = CreateValidationSchema.CorporationValidation.validate(data);
     if (error) return Response.badRequest(error.message);
 
@@ -18,17 +20,18 @@ class CorporationService {
     return Response.created("Organização criada com sucesso!");
   }
 
-  async updateCorporation(corporationId: string, data: Partial<CorporationInterface>) {
-    data.updatedAt = new Date();
-    if (!corporationId) return Response.badRequest("ID não informado");
+  async updateCorporation(id: string, data: Partial<CorporationInterface>) {
 
-    const { error } = UpdateValidationSchema.UpdateValidation.validate(data);
+    if (!id) return Response.badRequest("ID não informado");
+    data.updatedAt = new Date();
+
+    const { error } = UpdateValidationSchema.CorporationValidation.validate(data);
     if (error) return Response.badRequest(error.message);
 
-    const [updated] = await this.model.update(data, { where: { corporationId } });
+    const [updated] = await this.model.update(data, { where: { corporationId: id } });
     if (!updated) return Response.notFound("Organização não encontrada!");
 
-    const result = await this.model.findByPk(corporationId);
+    const result = await this.model.findByPk(id);
     return Response.ok("Organização atualizada com sucesso!", result);
   }
 

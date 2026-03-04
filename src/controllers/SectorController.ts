@@ -6,7 +6,12 @@ class SectorController {
 
   async createSector(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await this.service.createSector(req.body);
+      const user = res.locals.user;
+      const data = {
+        ...req.body,
+        createdBy: user.userId
+      }
+      const result = await this.service.createSector(data);
       return res.status(result.status).json(result);
     } catch (error) {
       console.error("Erro em createSector:", error);
@@ -16,8 +21,13 @@ class SectorController {
 
   async updateSector(req: Request, res: Response, next: NextFunction) {
     try {
+      const user = res.locals.user;
+      const data = {
+        ...req.body,
+        updatedBy: user.userId
+      }
       const { id } = req.params;
-      const result = await this.service.updateSector(id, req.body);
+      const result = await this.service.updateSector(id, data);
       return res.status(result.status).json(result);
     } catch (error) {
       console.error("Erro em updateSector:", error);

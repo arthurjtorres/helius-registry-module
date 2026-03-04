@@ -9,4 +9,5 @@ export default interface PersonInterface {
   createdBy: string;
   updatedAt?: Date;
   updatedBy?: string;
+  activated?: boolean;
 }
