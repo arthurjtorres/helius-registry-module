@@ -1,8 +1,10 @@
 import { ModelStatic, Op } from "sequelize";
-import PersonModel from "../database/models/PersonModel";
+import Response from "../utils/Response";
+
 import CreateValidationSchema from "./validations/CreateValidationSchema";
 import UpdateValidationSchema from "./validations/UpdateValidationSchema";
-import Response from "../utils/Response";
+
+import { DocumentModel, PersonModel } from "../database/models";
 import PersonInterface from "../database/interfaces/PersonInterface";
 
 class PersonService {
@@ -10,7 +12,7 @@ class PersonService {
 
   async createPerson(data: PersonInterface) {
     data.createdAt = new Date();
-    
+
     const { error } = CreateValidationSchema.PersonValidation.validate(data);
     if (error) return Response.badRequest(error.message);
 
@@ -18,20 +20,21 @@ class PersonService {
     return Response.created("Pessoa criada com sucesso!", created);
   }
 
-  async updatePerson(personId: string, data: Partial<PersonInterface>) {
-    data.updatedAt = new Date();
-    if (!personId) return Response.badRequest("ID da pessoa não Informado!");
+  async updatePerson(id: string, data: Partial<PersonInterface>) {
 
-    const { error } = UpdateValidationSchema.UpdateValidation.validate(data);
+    if (!id) return Response.badRequest("ID da pessoa não Informado!");
+    data.updatedAt = new Date();
+
+    const { error } = UpdateValidationSchema.PersonValidation.validate(data);
     if (error) return Response.badRequest(error.message);
 
     const [updated] = await this.model.update(data, {
-      where: { personId },
+      where: { personId: id },
     });
 
     if (!updated) return Response.notFound("Pessoa não encontrada!");
 
-    const result = await this.model.findByPk(personId);
+    const result = await this.model.findByPk(id);
     return Response.ok("Pessoa atualizada com sucesso!", result);
   }
 
@@ -44,7 +47,11 @@ class PersonService {
   async getPerson(id: string) {
     if (!id) return Response.badRequest("ID da pessoa não informado.");
 
-    const result = await this.model.findByPk(id);
+    const result = await this.model.findByPk(id, {
+      include: [
+        { model: DocumentModel, as: 'Document' }
+      ]
+    });
     if (!result) return Response.notFound("Pessoa não encontrada!");
     return Response.ok("Pessoa encontrada!", result);
   }

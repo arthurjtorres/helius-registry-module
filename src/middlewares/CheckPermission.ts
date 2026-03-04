@@ -2,7 +2,7 @@ import { NextFunction, Request, Response as ExpressResponse } from "express";
 import Response, { StandardResponse } from "../utils/Response";
 import { JwtPayload } from "./Authentication";
 
-const CURRENT_MODULE = 'JURIDICO';
+const CURRENT_MODULE = 'CADASTRO';
 
 export const checkPermission = (requiredMenu: string, requiredAction?: string) => {
   return (req: Request, res: ExpressResponse, next: NextFunction) => {

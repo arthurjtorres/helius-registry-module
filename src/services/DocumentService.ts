@@ -1,9 +1,11 @@
 import { ModelStatic, Op } from "sequelize";
-import DocumentModel from "../database/models/DocumentModel";
-import PersonModel from "../database/models/PersonModel";
+import Response from "../utils/Response";
+
 import CreateValidationSchema from "./validations/CreateValidationSchema";
 import UpdateValidationSchema from "./validations/UpdateValidationSchema";
-import Response from "../utils/Response";
+
+import { DocumentModel, PersonModel } from "../database/models";
+
 import DocumentInterface from "../database/interfaces/DocumentInterface";
 
 class DocumentService {
@@ -11,14 +13,14 @@ class DocumentService {
 
   async createDocument(data: DocumentInterface) {
     data.createdAt = new Date();
-    
+
     const { error } = CreateValidationSchema.DocumentValidation.validate(data);
     if (error) return Response.badRequest(error.message);
 
     // Verifica se já existe documento desse tipo para a mesma pessoa
     const exists = await this.model.findOne({
       where: {
-        fkDocumentPersonId: data.fkDocumentPersonId,
+        fkPersonId: data.fkPersonId,
         documentType: data.documentType
       }
     });
@@ -31,21 +33,22 @@ class DocumentService {
     return Response.created("Documento criado com sucesso!");
   }
 
-  async updateDocument(documentId: string, data: Partial<DocumentInterface>) {
-    data.updatedAt = new Date();
-    if (!documentId) return Response.badRequest("ID não informado");
+  async updateDocument(id: string, data: Partial<DocumentInterface>) {
 
-    const { error } = UpdateValidationSchema.UpdateValidation.validate(data);
+    if (!id) return Response.badRequest("ID não informado");
+    data.updatedAt = new Date();
+
+    const { error } = UpdateValidationSchema.DocumentValidation.validate(data);
     if (error) return Response.badRequest(error.message);
 
-    const [updated] = await this.model.update(data, {
-      where: { documentId },
-    });
+    const [updated] = await this.model.update(data, { where: { documentId: id } });
 
     if (!updated) return Response.notFound("Documento não encontrado!");
 
-    const result = await this.model.findByPk(documentId, {
-      include: [{ model: PersonModel }],
+    const result = await this.model.findByPk(id, {
+      include: [
+        { model: PersonModel, as: 'Person' }
+      ],
     });
 
     return Response.ok("Documento atualizado com sucesso!", result);
@@ -61,7 +64,9 @@ class DocumentService {
     if (!id) return Response.badRequest("ID do documento não informado.");
 
     const result = await this.model.findByPk(id, {
-      include: [{ model: PersonModel }],
+      include: [
+        { model: PersonModel, as: 'Person' }
+      ],
     });
 
     if (!result) return Response.notFound("Documento não encontrado!");
@@ -83,13 +88,15 @@ class DocumentService {
       where.uf = query.uf;
     }
 
-    if (query.fkDocumentPersonId) {
-      where.fkDocumentPersonId = query.fkDocumentPersonId;
+    if (query.fkPersonId) {
+      where.fkDocumentPersonId = query.fkPersonId;
     }
 
     const result = await this.model.findAll({
       where,
-      include: [{ model: PersonModel }],
+      include: [
+        { model: PersonModel, as: 'Person' }
+      ],
     });
 
     if (!result.length) {

@@ -6,7 +6,12 @@ class CorporationController {
 
   async createCorporation(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await this.service.createCorporation(req.body);
+      const user = res.locals.user;
+      const data = {
+        ...req.body,
+        createdBy: user.userId
+      }
+      const result = await this.service.createCorporation(data);
       return res.status(result.status).json(result);
     } catch (error) {
       console.error("Erro em createCorporation:", error);
@@ -16,8 +21,13 @@ class CorporationController {
 
   async updateCorporation(req: Request, res: Response, next: NextFunction) {
     try {
+      const user = res.locals.user;
+      const data = {
+        ...req.body,
+        updatedBy: user.userId
+      }
       const { id } = req.params;
-      const result = await this.service.updateCorporation(id, req.body);
+      const result = await this.service.updateCorporation(id, data);
       return res.status(result.status).json(result);
     } catch (error) {
       console.error("Erro em updateCorporation:", error);

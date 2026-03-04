@@ -1,8 +1,10 @@
 import { ModelStatic, Op } from "sequelize";
-import PositionModel from "../database/models/PositionModel";
+import Response from "../utils/Response";
+
 import CreateValidationSchema from "./validations/CreateValidationSchema";
 import UpdateValidationSchema from "./validations/UpdateValidationSchema";
-import Response from "../utils/Response";
+
+import { PositionModel } from "../database/models";
 import PositionInterface from "../database/interfaces/PositionInterface";
 
 class PositionService {
@@ -10,7 +12,7 @@ class PositionService {
 
   async createPosition(data: PositionInterface) {
     data.createdAt = new Date();
-    
+
     const { error } = CreateValidationSchema.PositionValidation.validate(data);
     if (error) return Response.badRequest(error.message);
 
@@ -18,17 +20,18 @@ class PositionService {
     return Response.created("Cargo criado com sucesso!");
   }
 
-  async updatePosition(positionId: string, data: Partial<PositionInterface>) {
-    data.updatedAt = new Date();
-    if (!positionId) return Response.badRequest("ID não informado");
+  async updatePosition(id: string, data: Partial<PositionInterface>) {
 
-    const { error } = UpdateValidationSchema.UpdateValidation.validate(data);
+    if (!id) return Response.badRequest("ID não informado");
+    data.updatedAt = new Date();
+
+    const { error } = UpdateValidationSchema.PositionValidation.validate(data);
     if (error) return Response.badRequest(error.message);
 
-    const [updated] = await this.model.update(data, { where: { positionId} });
+    const [updated] = await this.model.update(data, { where: { positionId: id } });
     if (!updated) return Response.notFound("Cargo não encontrado!");
 
-    const result = await this.model.findByPk(positionId);
+    const result = await this.model.findByPk(id);
 
     return Response.ok("Cargo atualizado com sucesso!", result);
   }
@@ -53,7 +56,7 @@ class PositionService {
     positionName?: string;
     positionCode?: number;
     fkSectorId?: string;
-    fkDepartmentId?:string;
+    fkDepartmentId?: string;
   }) {
     const where: any = {};
 

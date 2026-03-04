@@ -2,9 +2,9 @@ export default interface EmployeeInterface {
   employeeId?: string;
   registration: string;
   admissionDate?: Date;
-  fkEmployeePersonId: string;
-  fkEmployeeCompanyId?: string;
-  fkEmployeePositionId?: string;
+  fkPersonId: string;
+  fkCompanyId?: string;
+  fkPositionId?: string;
   fkSectorId?: string;
   fkDepartmentId?: string;
 
@@ -12,4 +12,5 @@ export default interface EmployeeInterface {
   createdBy: string;
   updatedAt?: Date;
   updatedBy?: string;
+  activated?: boolean;
 }
