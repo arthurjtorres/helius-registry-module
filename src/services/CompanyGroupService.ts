@@ -1,8 +1,10 @@
 import { ModelStatic, Op } from "sequelize";
-import CompanyGroupModel from "../database/models/CompanyGroupModel";
+import Response from "../utils/Response";
+
 import CreateValidationSchema from "./validations/CreateValidationSchema";
 import UpdateValidationSchema from "./validations/UpdateValidationSchema";
-import Response from "../utils/Response";
+
+import { CompanyGroupModel } from "../database/models";
 import CompanyGroupInterface from "../database/interfaces/CompanyGroupInterface";
 
 class CompanyGroupService {
@@ -10,7 +12,7 @@ class CompanyGroupService {
 
   async createCompanyGroup(data: CompanyGroupInterface) {
     data.createdAt = new Date();
-     
+
     const { error } = CreateValidationSchema.CompanyGroupValidation.validate(data);
     if (error) return Response.badRequest(error.message);
 
@@ -18,17 +20,17 @@ class CompanyGroupService {
     return Response.created("Grupo criado com sucesso!");
   }
 
-  async updateCompanyGroup(groupId: string, data: Partial<CompanyGroupInterface>) {
+  async updateCompanyGroup(id: string, data: Partial<CompanyGroupInterface>) {
+    if (!id) return Response.badRequest("ID não informado");
     data.updatedAt = new Date();
-    if (!groupId) return Response.badRequest("ID não informado");
 
-    const { error } = UpdateValidationSchema.UpdateValidation.validate(data);
+    const { error } = UpdateValidationSchema.CompanyGroupValidation.validate(data);
     if (error) return Response.badRequest(error.message);
 
-    const [updated] = await this.model.update(data, { where: { groupId } });
+    const [updated] = await this.model.update(data, { where: { groupId: id } });
     if (!updated) return Response.notFound("Grupo não encontrado!");
 
-    const result = await this.model.findByPk(groupId);
+    const result = await this.model.findByPk(id);
     return Response.ok("Grupo atualizado com sucesso!", result);
   }
 

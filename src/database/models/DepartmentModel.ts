@@ -1,7 +1,7 @@
 // DepartmentModel
 
 import { DataTypes, Model } from "sequelize";
-import db from ".";
+import db from "./database";
 import sequelize from "sequelize";
 
 class DepartmentModel extends Model {
@@ -69,8 +69,8 @@ DepartmentModel.init(
   },
   {
     sequelize: db,
-    tableName: "department",
-    schema: "registry",
+    tableName: 'department',
+    schema: 'registry',
     timestamps: false,
     underscored: true,
   }

@@ -1,8 +1,10 @@
 import { ModelStatic, Op } from "sequelize";
-import DepartmentModel from "../database/models/DepartmentModel";
+import Response from "../utils/Response";
+
 import CreateValidationSchema from "./validations/CreateValidationSchema";
 import UpdateValidationSchema from "./validations/UpdateValidationSchema";
-import Response from "../utils/Response";
+
+import { DepartmentModel } from "../database/models";
 import DepartmentInterface from "../database/interfaces/DepartmentInterface";
 
 class DepartmentService {
@@ -10,7 +12,7 @@ class DepartmentService {
 
   async createDepartment(data: DepartmentInterface) {
     data.createdAt = new Date();
-    
+
     const { error } = CreateValidationSchema.DepartmentValidation.validate(data);
     if (error) return Response.badRequest(error.message);
 
@@ -18,17 +20,18 @@ class DepartmentService {
     return Response.created("Departamento criado com sucesso!");
   }
 
-  async updateDepartment(departmentId: string, data: Partial<DepartmentInterface>) {
-    data.updatedAt = new Date();
-    if (!departmentId) return Response.badRequest("ID não informado");
+  async updateDepartment(id: string, data: Partial<DepartmentInterface>) {
 
-    const { error } = UpdateValidationSchema.UpdateValidation.validate(data);
+    if (!id) return Response.badRequest("ID não informado");
+    data.updatedAt = new Date();
+
+    const { error } = UpdateValidationSchema.DepartmentValidation.validate(data);
     if (error) return Response.badRequest(error.message);
-    
-    const [updated] = await this.model.update(data, { where: { departmentId } });
+
+    const [updated] = await this.model.update(data, { where: { departmentId: id } });
     if (!updated) return Response.notFound("Departamento não encontrado!");
 
-    const result = await this.model.findByPk(departmentId);
+    const result = await this.model.findByPk(id);
     return Response.ok("Departamento atualizado com sucesso!", result);
   }
 

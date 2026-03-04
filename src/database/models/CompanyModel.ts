@@ -1,17 +1,15 @@
 // CompanyModel
 
 import { DataTypes, Model } from "sequelize";
-import db from ".";
+import db from "./database";
 import sequelize from "sequelize";
-import CorporationModel from "./CorporationModel";
-import CompanyGroupModel from "./CompanyGroupModel";
 
 class CompanyModel extends Model {
   declare companyId: string;
   declare companyName: string;
   declare companyCode?: string;
   declare companyAcronym: string;
-  declare fkCompanyCorporationId: string;
+  declare fkCorporationId: string;
   declare fkCompanyGroupId: string;
 
   declare createdAt: Date;
@@ -21,99 +19,80 @@ class CompanyModel extends Model {
   declare activated: boolean;
 }
 
-CompanyModel.init(
-  {
-    companyId: {
-      type: DataTypes.UUID,
-      primaryKey: true,
-      defaultValue: DataTypes.UUIDV4,
-      allowNull: false,
+CompanyModel.init({
+  companyId: {
+    type: DataTypes.UUID,
+    primaryKey: true,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+  },
+  companyName: {
+    type: sequelize.STRING,
+    allowNull: false,
+  },
+  companyCode: {
+    type: sequelize.STRING,
+    allowNull: true,
+  },
+  companyAcronym: {
+    type: sequelize.STRING,
+    unique: true,
+    allowNull: false,
+  },
+  fkCorporationId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: "corporation",
+      key: "corporation_id",
     },
-    companyName: {
-      type: sequelize.STRING,
-      allowNull: false,
+    onUpdate: "CASCADE",
+    onDelete: "CASCADE",
+  },
+  fkCompanyGroupId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: "company_group",
+      key: "group_id",
     },
-    companyCode: {
-      type: sequelize.STRING,
-      allowNull: true,
-    },
-    companyAcronym: {
-      type: sequelize.STRING,
-      unique: true,
-      allowNull: false,
-    },
-    fkCompanyCorporationId: {
-      type: DataTypes.UUID,
-      allowNull: false,
-      references: {
-        model: "corporation",
-        key: "corporation_id",
-      },
-      onUpdate: "CASCADE",
-      onDelete: "CASCADE",
-    },
-    fkCompanyGroupId: {
-      type: DataTypes.UUID,
-      allowNull: false,
-      references: {
-        model: "company_group",
-        key: "group_id",
-      },
-      onUpdate: "CASCADE",
-      onDelete: "CASCADE",
-    },
+    onUpdate: "CASCADE",
+    onDelete: "CASCADE",
+  },
 
-    createdAt: {
-      allowNull: false,
-      type: sequelize.DATE,
-      defaultValue: sequelize.literal("CURRENT_TIMESTAMP"),
-    },
-    createdBy: {
-      allowNull: false,
-      type: DataTypes.UUID,
+  createdAt: {
+    allowNull: false,
+    type: sequelize.DATE,
+    defaultValue: sequelize.literal("CURRENT_TIMESTAMP"),
+  },
+  createdBy: {
+    allowNull: false,
+    type: DataTypes.UUID,
 
-    },
-    updatedAt: {
-      allowNull: true,
-      type: sequelize.DATE,
-      defaultValue: sequelize.literal("CURRENT_TIMESTAMP"),
-    },
-    updatedBy: {
-      allowNull: true,
-      type: DataTypes.UUID,
+  },
+  updatedAt: {
+    allowNull: true,
+    type: sequelize.DATE,
+    defaultValue: sequelize.literal("CURRENT_TIMESTAMP"),
+  },
+  updatedBy: {
+    allowNull: true,
+    type: DataTypes.UUID,
 
-    },
-    activated: {
+  },
+  activated: {
     allowNull: false,
     type: sequelize.BOOLEAN,
     defaultValue: true,
   },
 
-  },
-  {
-    sequelize: db,
-    tableName: "company",
-    schema: "registry",
-    timestamps: false,
-    underscored: true,
-  }
+}, {
+  sequelize: db,
+  tableName: 'company',
+  schema: 'registry',
+  timestamps: false,
+  underscored: true,
+}
 );
-
-// Associações
-CompanyModel.belongsTo(CorporationModel, {
-  foreignKey: "fkCompanyCorporationId",
-});
-
-CompanyModel.belongsTo(CompanyGroupModel, {
-  foreignKey: "fkCompanyGroupId",
-});
-
-CorporationModel.hasMany(CompanyModel, {
-  foreignKey: "fkCompanyCorporationId",
-});
-
-CompanyGroupModel.hasMany(CompanyModel, {
-  foreignKey: "fkCompanyGroupId",
-});
 
 export default CompanyModel;

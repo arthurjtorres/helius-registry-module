@@ -2,20 +2,15 @@
 
 import { DataTypes, Model } from "sequelize";
 import db from ".";
-import PersonModel from "./PersonModel";
-import CompanyModel from "./CompanyModel";
-import PositionModel from "./PositionModel";
 import sequelize from "sequelize";
-import SectorModel from "./SectorModel";
-import DepartmentModel from "./DepartmentModel";
 
 class EmployeeModel extends Model {
   declare employeeId: string;
   declare registration: string;
   declare admissionDate: Date;
-  declare fkEmployeePersonId: string;
-  declare fkEmployeeCompanyId?: string;
-  declare fkEmployeePositionId?: string;
+  declare fkPersonId: string;
+  declare fkCompanyId?: string;
+  declare fkPositionId?: string;
   declare fkSectorId: string;
   declare fkDepartmentId: string;
 
@@ -42,22 +37,21 @@ EmployeeModel.init({
     type: sequelize.DATEONLY,
     allowNull: true,
   },
-  fkEmployeePersonId: {
+  fkPersonId: {
     type: DataTypes.UUID,
     allowNull: false,
   },
-  fkEmployeeCompanyId: {
+  fkCompanyId: {
     type: DataTypes.UUID,
     allowNull: true,
   },
-  fkEmployeePositionId: {
+  fkPositionId: {
     type: DataTypes.UUID,
     allowNull: true,
   },
   fkSectorId: {
     type: DataTypes.UUID,
     allowNull: true,
-
   },
   fkDepartmentId: {
     type: DataTypes.UUID,
@@ -91,30 +85,10 @@ EmployeeModel.init({
   },
 }, {
   sequelize: db,
-  tableName: "employee",
-  schema: "registry",
+  tableName: 'employee',
+  schema: 'registry',
   timestamps: false,
   underscored: true,
-});
-
-EmployeeModel.belongsTo(PersonModel, {
-  foreignKey: 'fkEmployeePersonId'
-});
-
-EmployeeModel.belongsTo(CompanyModel, {
-  foreignKey: "fkEmployeeCompanyId",
-});
-
-EmployeeModel.belongsTo(PositionModel, {
-  foreignKey: "fkEmployeePositionId",
-});
-
-EmployeeModel.belongsTo(SectorModel, {
-  foreignKey: "fkSectorId",
-});
-
-EmployeeModel.belongsTo(DepartmentModel, {
-  foreignKey: "fkDepartmentId",
 });
 
 export default EmployeeModel;

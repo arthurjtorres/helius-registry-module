@@ -20,6 +20,7 @@ const CompanyGroupValidation = joi.object({
 
   createdAt: joi.date().required(),
   createdBy: joi.string().required(),
+  activated: joi.boolean().optional(),
 });
 
 const CompanyValidation = joi.object({
@@ -31,6 +32,7 @@ const CompanyValidation = joi.object({
 
   createdAt: joi.date().required(),
   createdBy: joi.string().required(),
+  activated: joi.boolean().optional(),
 });
 
 const CorporationValidation = joi.object({
@@ -40,6 +42,7 @@ const CorporationValidation = joi.object({
 
   createdAt: joi.date().required(),
   createdBy: joi.string().required(),
+  activated: joi.boolean().optional(),
 });
 
 const DepartmentValidation = joi.object({
@@ -49,6 +52,7 @@ const DepartmentValidation = joi.object({
 
   createdAt: joi.date().required(),
   createdBy: joi.string().required(),
+  activated: joi.boolean().optional(),
 });
 
 const SectorValidation = joi.object({
@@ -58,6 +62,7 @@ const SectorValidation = joi.object({
 
   createdAt: joi.date().required(),
   createdBy: joi.string().required(),
+  activated: joi.boolean().optional(),
 });
 
 const PositionValidation = joi.object({
@@ -66,6 +71,7 @@ const PositionValidation = joi.object({
 
   createdAt: joi.date().required(),
   createdBy: joi.string().required(),
+  activated: joi.boolean().optional(),
 });
 
 const VehicleTypeValidation = joi.object({
@@ -89,6 +95,7 @@ const VehicleValidation = joi.object({
 
   createdAt: joi.date().required(),
   createdBy: joi.string().required(),
+  activated: joi.boolean().optional(),
 });
 
 const LocationValidation = joi.object({
@@ -100,6 +107,7 @@ const LocationValidation = joi.object({
 
   createdAt: joi.date().required(),
   createdBy: joi.string().required(),
+  activated: joi.boolean().optional(),
 });
 
 const PersonValidation = joi.object({
@@ -110,20 +118,24 @@ const PersonValidation = joi.object({
 
   createdAt: joi.date().required(),
   createdBy: joi.string().required(),
+  activated: joi.boolean().optional(),
 });
 
 const DocumentValidation = joi.object({
   documentType: joi.string().valid("RG", "CNH", "CPF", "CTPS", "PASSAPORTE").required(),
   documentNumber: joi.string().required(),
-  orgEmitter: joi.string().required(),
-  uf: joi.string().length(2).required(),
-  issueDate: joi.date().required(),
-  motherName: joi.string().required(),
+  documentPhoto: joi.any().optional(),
+  orgEmitter: joi.string().optional(),
+  uf: joi.string().length(2).optional(),
+  issueDate: joi.date().optional(),
+  validationDate: joi.date().optional(),
+  motherName: joi.string().optional(),
   fatherName: joi.string().optional(),
   fkDocumentPersonId: joi.string().uuid().required(),
 
   createdAt: joi.date().required(),
   createdBy: joi.string().required(),
+  activated: joi.boolean().optional(),
 });
 
 const EmployeeValidation = joi.object({
@@ -137,6 +149,7 @@ const EmployeeValidation = joi.object({
 
   createdAt: joi.date().required(),
   createdBy: joi.string().required(),
+  activated: joi.boolean().optional(),
 });
 
 export = {
