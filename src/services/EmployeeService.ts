@@ -5,7 +5,7 @@ import Response from "../utils/Response";
 import CreateValidationSchema from "./validations/CreateValidationSchema";
 import UpdateValidationSchema from "./validations/UpdateValidationSchema";
 
-import { EmployeeModel, PersonModel, CompanyModel, PositionModel, SectorModel, DepartmentModel } from "../database/models";
+import { EmployeeModel, PersonModel, CompanyModel, PositionModel, SectorModel, DepartmentModel, DocumentModel } from "../database/models";
 import EmployeeInterface from "../database/interfaces/EmployeeInterface";
 
 import PersonService from "./PersonService";
@@ -39,7 +39,7 @@ class EmployeeService {
     const result = await this.model.findByPk(id, {
       include: [
         { model: PersonModel, as: 'Person' },
-        { model: CompanyModel, as: 'Company'},
+        { model: CompanyModel, as: 'Company' },
         { model: PositionModel, as: 'Position' },
         { model: SectorModel, as: 'Sector' },
         { model: DepartmentModel, as: 'Department' }
@@ -61,7 +61,7 @@ class EmployeeService {
     const result = await this.model.findByPk(id, {
       include: [
         { model: PersonModel, as: 'Person' },
-        { model: CompanyModel, as: 'Company'},
+        { model: CompanyModel, as: 'Company' },
         { model: PositionModel, as: 'Position' },
         { model: SectorModel, as: 'Sector' },
         { model: DepartmentModel, as: 'Department' }
@@ -87,7 +87,7 @@ class EmployeeService {
       where,
       include: [
         { model: PersonModel, as: 'Person' },
-        { model: CompanyModel, as: 'Company'},
+        { model: CompanyModel, as: 'Company' },
         { model: PositionModel, as: 'Position' },
         { model: SectorModel, as: 'Sector' },
         { model: DepartmentModel, as: 'Department' }
@@ -102,32 +102,25 @@ class EmployeeService {
   }
 
   async bulkInsert(payload: {
-    companyCode: string;
+    companyId: string;
     employees: {
       registration: string;
       fullName: string;
       admissionDate: string;
       position: string;
       birthDate: string;
+      cpf?: string;
     }[];
   }) {
 
-    const { companyCode, employees: employeeList } = payload;
+    const { companyId, employees: employeeList } = payload;
 
     if (!employeeList.length) {
       return Response.badRequest("Lista de funcionários vazia.");
     }
 
-    if (!companyCode) {
-      return Response.badRequest("Código da empresa não informado.");
-    }
-
-    const company = await CompanyModel.findOne({
-      where: { companyAcronym: companyCode }
-    });
-
-    if (!company) {
-      return Response.notFound("Empresa não encontrada.");
+    if (!companyId) {
+      return Response.badRequest("Id da empresa não informado.");
     }
 
     const personService = new PersonService();
@@ -135,7 +128,7 @@ class EmployeeService {
     const createdEmployees = [];
 
     for (const emp of employeeList) {
-      const { fullName, registration, admissionDate, position, birthDate } = emp;
+      const { fullName, registration, admissionDate, position, birthDate, cpf } = emp;
 
       // Verifica se funcionário já existe
       const existingEmployee = await this.model.findOne({ where: { registration } });
@@ -146,54 +139,72 @@ class EmployeeService {
 
       // Divisão do nome
       const nameParts = fullName.trim().split(/\s+/);
-
       const firstName = nameParts[0];
-      const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
 
-      const parsedAdmissionDate = parse(admissionDate, "dd/MM/yyyy", new Date());
-      const parsedBirthDate = parse(birthDate, "dd/MM/yyyy", new Date());
+      try {
+        const parsedAdmissionDate = parse(admissionDate, "dd/MM/yyyy", new Date());
+        const parsedBirthDate = parse(birthDate, "dd/MM/yyyy", new Date());
 
-      const personPayload = {
-        //personId: uuidv4(),
-        fullName,
-        firstName,
-        lastName,
-        birthDate: parsedBirthDate, // assumindo que PersonModel aceita essa propriedade
-      };
+        const personPayload = {
+          fullName,
+          firstName,
+          lastName,
+          birthDate: parsedBirthDate, // assumindo que PersonModel aceita essa propriedade
+          activated: true,
+        };
 
-      const personResult = await personService.createPerson(personPayload as any);
+        const personResult = await personService.createPerson(personPayload as any);
+        if (personResult.status !== 201 || !('data' in personResult)) {
+          console.error(`Erro ao criar pessoa ${fullName}:`, personResult.message);
+          continue;
 
-      if (personResult.status !== 201 || !('data' in personResult)) {
-        console.error(`Erro ao criar pessoa ${fullName}:`, personResult.message);
+        }
+
+        const personData = personResult.data as { personId: string };
+        const fkPersonId = personData.personId;
+
+        if (cpf && cpf.trim() !== "") {
+          const cleanCpf = cpf.replace(/\D/g, ''); // Remove pontos e traços
+          if (cleanCpf.length === 11) {
+            // Importante: Verifique se o DocumentModel está importado no seu arquivo
+            await DocumentModel.create({
+              documentType: 'CPF',
+              documentNumber: cleanCpf,
+              fkPersonId: fkPersonId,
+              activated: true
+            }).catch(err => console.error(`Erro ao salvar CPF de ${fullName}:`, err.message));
+          }
+        }
+
+        // Buscar cargo
+        let fkPositionId: string | undefined = undefined;
+        const positionResult = await positionService.findPositions({ positionName: position });
+        if (positionResult.status === 200 && ('data' in positionResult) && Array.isArray(positionResult.data)) {
+          const positionData = positionResult.data[0] as { positionId: string };
+          fkPositionId = positionData.positionId;
+        } else {
+          console.warn(`Cargo '${position}' não encontrado. Continuando sem atribuir posição.`);
+        }
+
+        await this.model.create({
+          registration,
+          fkPersonId,
+          admissionDate: parsedAdmissionDate,
+          fkPositionId,
+          fkCompanyId: companyId,
+          activated: true
+        });
+
+        createdEmployees.push({
+          registration,
+          fullName,
+        });
+
+      } catch (error) {
+        console.error(`Erro crítico no registro ${registration}:`, error);
         continue;
       }
-
-      const personData = personResult.data as { personId: string };
-      const fkEmployeePersonId = personData.personId;
-
-      // Buscar cargo
-      let fkEmployeePositionId: string | undefined = undefined;
-      const positionResult = await positionService.findPositions({ positionName: position });
-      if (positionResult.status === 200 && ('data' in positionResult) && Array.isArray(positionResult.data)) {
-        const positionData = positionResult.data[0] as { positionId: string };
-        fkEmployeePositionId = positionData.positionId;
-      } else {
-        console.warn(`Cargo '${position}' não encontrado. Continuando sem atribuir posição.`);
-      }
-
-      await this.model.create({
-        //employeeId: uuidv4(),
-        registration,
-        fkEmployeePersonId,
-        admissionDate: parsedAdmissionDate,
-        fkEmployeePositionId,
-        fkEmployeeCompanyId: company.companyId
-      });
-
-      createdEmployees.push({
-        registration,
-        fullName,
-      });
     }
 
     return Response.created("Funcionários inseridos com sucesso!", createdEmployees);
