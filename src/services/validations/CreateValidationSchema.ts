@@ -12,7 +12,7 @@ const CompanyValidation = joi.object({
   companyName: joi.string().required(),
   companyCode: joi.string().allow(null, ''),
   companyAcronym: joi.string().required(),
-  fkCompanyCorporationId: joi.string().uuid().required(),
+  fkCorporationId: joi.string().uuid().required(),
   fkCompanyGroupId: joi.string().uuid().required(),
 
   createdAt: joi.date().required(),
@@ -80,7 +80,7 @@ const DocumentValidation = joi.object({
   validationDate: joi.date().optional(),
   motherName: joi.string().optional(),
   fatherName: joi.string().optional(),
-  fkDocumentPersonId: joi.string().uuid().required(),
+  fkPersonId: joi.string().uuid().required(),
 
   createdAt: joi.date().required(),
   createdBy: joi.string().required(),
@@ -90,9 +90,9 @@ const DocumentValidation = joi.object({
 const EmployeeValidation = joi.object({
   registration: joi.string().required(),
   admissionDate: joi.date().optional(),
-  fkEmployeePersonId: joi.string().uuid().required(),
-  fkEmployeeCompanyId: joi.string().uuid().optional(),
-  fkEmployeePositionId: joi.string().uuid().optional(),
+  fkPersonId: joi.string().uuid().required(),
+  fkCompanyId: joi.string().uuid().optional(),
+  fkPositionId: joi.string().uuid().optional(),
   fkSectorId: joi.string().uuid().optional(),
   fkDepartmentId: joi.string().uuid().optional(),
 
