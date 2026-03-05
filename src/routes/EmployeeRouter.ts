@@ -10,6 +10,6 @@ employeeRouter.put("/:id", verifyToken, controller.updateEmployee.bind(controlle
 employeeRouter.delete("/:id", verifyToken, controller.deleteEmployee.bind(controller));
 employeeRouter.get("/:id", controller.getEmployee.bind(controller));
 employeeRouter.get("/", controller.findEmployees.bind(controller));
-employeeRouter.post("/bulk", controller.bulkInsert.bind(controller));
+employeeRouter.post("/bulk", verifyToken, controller.bulkInsert.bind(controller));
 
 export default employeeRouter;
