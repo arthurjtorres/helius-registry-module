@@ -26,7 +26,7 @@ class EmployeeService {
 
   async updateEmployee(id: string, data: Partial<EmployeeInterface>) {
 
-    if (!IDBDatabase) return Response.badRequest("ID não informado");
+    if (!id) return Response.badRequest("ID não informado");
     data.updatedAt = new Date();
 
     const { error } = UpdateValidationSchema.EmployeeValidation.validate(data);
