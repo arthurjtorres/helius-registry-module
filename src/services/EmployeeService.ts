@@ -103,6 +103,7 @@ class EmployeeService {
 
   async bulkInsert(payload: {
     companyId: string;
+    userId: string;
     employees: {
       registration: string;
       fullName: string;
@@ -111,9 +112,9 @@ class EmployeeService {
       birthDate: string;
       cpf?: string;
     }[];
-  }, createdBy: string) {
+  }) {
 
-    const { companyId, employees: employeeList } = payload;
+    const { companyId, userId, employees: employeeList } = payload;
 
     if (!employeeList.length) {
       return Response.badRequest("Lista de funcionários vazia.");
@@ -152,7 +153,7 @@ class EmployeeService {
           lastName,
           birthDate: parsedBirthDate, // assumindo que PersonModel aceita essa propriedade
           activated: true,
-          createdBy,
+          createdBy: userId,
         };
 
         const personResult = await personService.createPerson(personPayload as any);
@@ -174,7 +175,7 @@ class EmployeeService {
               documentNumber: cleanCpf,
               fkPersonId: fkPersonId,
               activated: true,
-              createdBy,
+              createdBy: userId,
             }).catch(err => console.error(`Erro ao salvar CPF de ${fullName}:`, err.message));
           }
         }
@@ -196,7 +197,7 @@ class EmployeeService {
           fkPositionId,
           fkCompanyId: companyId,
           activated: true,
-          createdBy,
+          createdBy: userId,
         });
 
         createdEmployees.push({
