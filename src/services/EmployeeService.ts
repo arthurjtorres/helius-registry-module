@@ -111,7 +111,7 @@ class EmployeeService {
       birthDate: string;
       cpf?: string;
     }[];
-  }) {
+  }, createdBy: string) {
 
     const { companyId, employees: employeeList } = payload;
 
@@ -152,6 +152,7 @@ class EmployeeService {
           lastName,
           birthDate: parsedBirthDate, // assumindo que PersonModel aceita essa propriedade
           activated: true,
+          createdBy,
         };
 
         const personResult = await personService.createPerson(personPayload as any);
@@ -172,7 +173,8 @@ class EmployeeService {
               documentType: 'CPF',
               documentNumber: cleanCpf,
               fkPersonId: fkPersonId,
-              activated: true
+              activated: true,
+              createdBy,
             }).catch(err => console.error(`Erro ao salvar CPF de ${fullName}:`, err.message));
           }
         }
@@ -193,7 +195,8 @@ class EmployeeService {
           admissionDate: parsedAdmissionDate,
           fkPositionId,
           fkCompanyId: companyId,
-          activated: true
+          activated: true,
+          createdBy,
         });
 
         createdEmployees.push({
