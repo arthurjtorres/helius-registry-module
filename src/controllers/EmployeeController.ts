@@ -70,7 +70,11 @@ class EmployeeController {
   async bulkInsert(req: Request, res: Response, next: NextFunction) {
   try {
     const user = res.locals.user;
-    const result = await this.service.bulkInsert(req.body, user.userId);
+      const data = {
+        ...req.body,
+        userId: user.userId
+      }
+    const result = await this.service.bulkInsert(data);
     return res.status(result.status).json(result);
   } catch (error) {
     console.error("Erro em bulkInsertFromTxt:", error);
