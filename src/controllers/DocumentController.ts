@@ -38,11 +38,23 @@ class DocumentController {
   async deleteDocument(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const result = await this.service.deleteDocument(id);
+      const result = await this.service.deleteDocument(id, res.locals.user.userId);
       return res.status(result.status).json(result);
     } catch (error) {
       console.error("Erro em deleteDocument:", error);
       return res.status(500).json("Erro interno ao deletar documento.");
+    }
+  }
+
+  /** PATCH /:id/reactivate — reativa o registro (`activated = true`). */
+  async reactivateDocument(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const result = await this.service.reactivateDocument(id, res.locals.user.userId);
+      return res.status(result.status).json(result);
+    } catch (error) {
+      console.error("Erro em reactivateDocument:", error);
+      return res.status(500).json("Erro interno ao reativar registro.");
     }
   }
 

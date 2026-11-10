@@ -38,11 +38,23 @@ class DepartmentController {
   async deleteDepartment(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const result = await this.service.deleteDepartment(id);
+      const result = await this.service.deleteDepartment(id, res.locals.user.userId);
       return res.status(result.status).json(result);
     } catch (error) {
       console.error("Erro em deleteDepartment:", error);
       return res.status(500).json("Erro interno ao deletar departamento.");
+    }
+  }
+
+  /** PATCH /:id/reactivate — reativa o registro (`activated = true`). */
+  async reactivateDepartment(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const result = await this.service.reactivateDepartment(id, res.locals.user.userId);
+      return res.status(result.status).json(result);
+    } catch (error) {
+      console.error("Erro em reactivateDepartment:", error);
+      return res.status(500).json("Erro interno ao reativar registro.");
     }
   }
 

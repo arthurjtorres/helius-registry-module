@@ -17,16 +17,19 @@ class DocumentService {
     const { error } = CreateValidationSchema.DocumentValidation.validate(data);
     if (error) return Response.badRequest(error.message);
 
-    // Verifica se já existe documento desse tipo para a mesma pessoa
-    const exists = await this.model.findOne({
-      where: {
-        fkPersonId: data.fkPersonId,
-        documentType: data.documentType
-      }
+    // Verifica unicidade (número do documento e tipo por pessoa), inclusive contra registros inativos
+    const byNumber = await this.model.findOne({ where: { documentNumber: data.documentNumber } });
+    const byType = await this.model.findOne({
+      where: { fkPersonId: data.fkPersonId, documentType: data.documentType }
     });
+    const existing = byNumber ?? byType;
 
-    if (exists) {
-      return Response.conflict("Esta pessoa já possui um documento deste tipo.");
+    if (existing) {
+      return Response.conflict(
+        existing.activated
+          ? (byNumber ? "Este número de documento já está cadastrado." : "Esta pessoa já possui um documento deste tipo.")
+          : `Já existe um documento inativo com estes dados (id: ${existing.documentId}). Reative-o em PATCH /document/${existing.documentId}/reactivate.`
+      );
     }
 
     await this.model.create({ ...data });
@@ -41,31 +44,61 @@ class DocumentService {
     const { error } = UpdateValidationSchema.DocumentValidation.validate(data);
     if (error) return Response.badRequest(error.message);
 
-    const [updated] = await this.model.update(data, { where: { documentId: id } });
+    const [updated] = await this.model.update(data, { where: { documentId: id, activated: true } });
 
     if (!updated) return Response.notFound("Documento não encontrado!");
 
-    const result = await this.model.findByPk(id, {
+    const result = await this.model.findOne({
+      where: { documentId: id, activated: true },
       include: [
-        { model: PersonModel, as: 'Person' }
+        { model: PersonModel, as: 'Person', where: { activated: true }, required: false }
       ],
     });
 
     return Response.ok("Documento atualizado com sucesso!", result);
   }
 
-  async deleteDocument(id: string) {
-    const deleted = await this.model.destroy({ where: { documentId: id } });
-    if (!deleted) return Response.notFound("Documento não encontrado!");
-    return Response.ok("Documento deletado com sucesso!");
+  /**
+   * Desativa o registro (exclusão lógica): `activated = false`.
+   * @param id Identificador do registro.
+   * @param updatedBy Usuário autenticado que executa a operação.
+   */
+  async deleteDocument(id: string, updatedBy: string) {
+    if (!id) return Response.badRequest("ID não informado");
+
+    const [updated] = await this.model.update(
+      { activated: false, updatedBy, updatedAt: new Date() },
+      { where: { documentId: id, activated: true } }
+    );
+    if (!updated) return Response.notFound("Documento não encontrado!");
+
+    return Response.ok("Documento desativado com sucesso!");
+  }
+
+  /**
+   * Reativa um registro desativado (`activated = true`).
+   * @param id Identificador do registro.
+   * @param updatedBy Usuário autenticado que executa a operação.
+   */
+  async reactivateDocument(id: string, updatedBy: string) {
+    if (!id) return Response.badRequest("ID não informado");
+
+    const [updated] = await this.model.update(
+      { activated: true, updatedBy, updatedAt: new Date() },
+      { where: { documentId: id, activated: false } }
+    );
+    if (!updated) return Response.notFound("Documento não encontrado ou já ativo!");
+
+    return Response.ok("Documento reativado com sucesso!");
   }
 
   async getDocument(id: string) {
     if (!id) return Response.badRequest("ID do documento não informado.");
 
-    const result = await this.model.findByPk(id, {
+    const result = await this.model.findOne({
+      where: { documentId: id, activated: true },
       include: [
-        { model: PersonModel, as: 'Person' }
+        { model: PersonModel, as: 'Person', where: { activated: true }, required: false }
       ],
     });
 
@@ -74,7 +107,7 @@ class DocumentService {
   }
 
   async findDocuments(query: Partial<DocumentInterface>) {
-    const where: any = {};
+    const where: any = { activated: true };
 
     if (query.documentType) {
       where.documentType = query.documentType;
@@ -95,7 +128,7 @@ class DocumentService {
     const result = await this.model.findAll({
       where,
       include: [
-        { model: PersonModel, as: 'Person' }
+        { model: PersonModel, as: 'Person', where: { activated: true }, required: false }
       ],
     });
 
