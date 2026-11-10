@@ -48,6 +48,10 @@ class Response {
     return { status: 422, message };
   }
 
+  static unavailable(message: string): ErrorResponse {
+    return { status: 503, message };
+  }
+
   static internalError(message: string = "Erro interno do servidor"): ErrorResponse {
     return { status: 500, message };
   }

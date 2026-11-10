@@ -38,7 +38,7 @@ class EmployeeController {
   async deleteEmployee(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const result = await this.service.deleteEmployee(id, res.locals.user.userId);
+      const result = await this.service.deleteEmployee(id, res.locals.user.userId, req.header('Authorization') ?? '');
       return res.status(result.status).json(result);
     } catch (error) {
       console.error("Erro em deleteEmployee:", error);
