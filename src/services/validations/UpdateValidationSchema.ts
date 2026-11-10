@@ -7,6 +7,7 @@ const CompanyGroupValidation = Validation.CompanyGroupValidation.fork(
 ).keys({
   updatedAt: joi.date().required(),
   updatedBy: joi.string().required(),
+  activated: joi.forbidden(),
 });
 
 const CompanyValidation = Validation.CompanyValidation.fork(
@@ -15,6 +16,7 @@ const CompanyValidation = Validation.CompanyValidation.fork(
 ).keys({
   updatedAt: joi.date().required(),
   updatedBy: joi.string().required(),
+  activated: joi.forbidden(),
 });
 
 const CorporationValidation = Validation.CorporationValidation.fork(
@@ -23,6 +25,7 @@ const CorporationValidation = Validation.CorporationValidation.fork(
 ).keys({
   updatedAt: joi.date().required(),
   updatedBy: joi.string().required(),
+  activated: joi.forbidden(),
 });
 
 const DepartmentValidation = Validation.DepartmentValidation.fork(
@@ -31,6 +34,7 @@ const DepartmentValidation = Validation.DepartmentValidation.fork(
 ).keys({
   updatedAt: joi.date().required(),
   updatedBy: joi.string().required(),
+  activated: joi.forbidden(),
 });
 
 const SectorValidation = Validation.SectorValidation.fork(
@@ -39,6 +43,7 @@ const SectorValidation = Validation.SectorValidation.fork(
 ).keys({
   updatedAt: joi.date().required(),
   updatedBy: joi.string().required(),
+  activated: joi.forbidden(),
 });
 
 const PositionValidation = Validation.PositionValidation.fork(
@@ -47,6 +52,7 @@ const PositionValidation = Validation.PositionValidation.fork(
 ).keys({
   updatedAt: joi.date().required(),
   updatedBy: joi.string().required(),
+  activated: joi.forbidden(),
 });
 
 const PersonValidation = Validation.PersonValidation.fork(
@@ -55,6 +61,7 @@ const PersonValidation = Validation.PersonValidation.fork(
 ).keys({
   updatedAt: joi.date().required(),
   updatedBy: joi.string().required(),
+  activated: joi.forbidden(),
 });
 
 const DocumentValidation = Validation.DocumentValidation.fork(
@@ -63,6 +70,7 @@ const DocumentValidation = Validation.DocumentValidation.fork(
 ).keys({
   updatedAt: joi.date().required(),
   updatedBy: joi.string().required(),
+  activated: joi.forbidden(),
 });
 
 const EmployeeValidation = Validation.EmployeeValidation.fork(
@@ -71,6 +79,7 @@ const EmployeeValidation = Validation.EmployeeValidation.fork(
 ).keys({
   updatedAt: joi.date().required(),
   updatedBy: joi.string().required(),
+  activated: joi.forbidden(),
 });
 
 export = {

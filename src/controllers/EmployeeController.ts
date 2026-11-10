@@ -38,11 +38,23 @@ class EmployeeController {
   async deleteEmployee(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const result = await this.service.deleteEmployee(id);
+      const result = await this.service.deleteEmployee(id, res.locals.user.userId, req.header('Authorization') ?? '');
       return res.status(result.status).json(result);
     } catch (error) {
       console.error("Erro em deleteEmployee:", error);
       return res.status(500).json("Erro interno ao deletar funcionário.");
+    }
+  }
+
+  /** PATCH /:id/reactivate — reativa o registro (`activated = true`). */
+  async reactivateEmployee(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const result = await this.service.reactivateEmployee(id, res.locals.user.userId);
+      return res.status(result.status).json(result);
+    } catch (error) {
+      console.error("Erro em reactivateEmployee:", error);
+      return res.status(500).json("Erro interno ao reativar registro.");
     }
   }
 

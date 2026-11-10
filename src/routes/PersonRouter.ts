@@ -8,6 +8,7 @@ const controller = new PersonController();
 personRouter.post("/", verifyToken, controller.createPerson.bind(controller));
 personRouter.put("/:id", verifyToken, controller.updatePerson.bind(controller));
 personRouter.delete("/:id", verifyToken, controller.deletePerson.bind(controller));
+personRouter.patch("/:id/reactivate", verifyToken, controller.reactivatePerson.bind(controller));
 personRouter.get("/:id", controller.getPerson.bind(controller));
 personRouter.get("/", controller.findPersons.bind(controller));
 

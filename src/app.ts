@@ -34,7 +34,7 @@ app.use(cors({
       callback(new Error('Bloqueado pelo CORS: Origem não permitida.'))
     }
   },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Auth-User', 'X-Auth-Pass', 'Accept'],
   credentials: true,
   preflightContinue: false,

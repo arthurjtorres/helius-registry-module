@@ -38,11 +38,23 @@ class CorporationController {
   async deleteCorporation(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const result = await this.service.deleteCorporation(id);
+      const result = await this.service.deleteCorporation(id, res.locals.user.userId);
       return res.status(result.status).json(result);
     } catch (error) {
       console.error("Erro em deleteCorporation:", error);
       return res.status(500).json("Erro interno ao deletar organização.");
+    }
+  }
+
+  /** PATCH /:id/reactivate — reativa o registro (`activated = true`). */
+  async reactivateCorporation(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const result = await this.service.reactivateCorporation(id, res.locals.user.userId);
+      return res.status(result.status).json(result);
+    } catch (error) {
+      console.error("Erro em reactivateCorporation:", error);
+      return res.status(500).json("Erro interno ao reativar registro.");
     }
   }
 

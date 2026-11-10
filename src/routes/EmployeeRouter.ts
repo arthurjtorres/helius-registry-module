@@ -8,6 +8,7 @@ const controller = new EmployeeController();
 employeeRouter.post("/", verifyToken, controller.createEmployee.bind(controller));
 employeeRouter.put("/:id", verifyToken, controller.updateEmployee.bind(controller));
 employeeRouter.delete("/:id", verifyToken, controller.deleteEmployee.bind(controller));
+employeeRouter.patch("/:id/reactivate", verifyToken, controller.reactivateEmployee.bind(controller));
 employeeRouter.get("/:id", controller.getEmployee.bind(controller));
 employeeRouter.get("/", controller.findEmployees.bind(controller));
 employeeRouter.post("/bulk", verifyToken, controller.bulkInsert.bind(controller));

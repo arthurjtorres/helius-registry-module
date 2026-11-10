@@ -38,11 +38,23 @@ class SectorController {
   async deleteSector(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const result = await this.service.deleteSector(id);
+      const result = await this.service.deleteSector(id, res.locals.user.userId);
       return res.status(result.status).json(result);
     } catch (error) {
       console.error("Erro em deleteSector:", error);
       return res.status(500).json("Erro interno ao deletar setor.");
+    }
+  }
+
+  /** PATCH /:id/reactivate — reativa o registro (`activated = true`). */
+  async reactivateSector(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const result = await this.service.reactivateSector(id, res.locals.user.userId);
+      return res.status(result.status).json(result);
+    } catch (error) {
+      console.error("Erro em reactivateSector:", error);
+      return res.status(500).json("Erro interno ao reativar registro.");
     }
   }
 
