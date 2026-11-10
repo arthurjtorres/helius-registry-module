@@ -10,6 +10,7 @@ import EmployeeInterface from "../database/interfaces/EmployeeInterface";
 
 import PersonService from "./PersonService";
 import PositionService from "./PositionService";
+import { hasActiveUserForEmployee, ControlUnavailableError } from "./integrations/UserService";
 
 class EmployeeService {
   private model: ModelStatic<EmployeeModel> = EmployeeModel;
@@ -63,9 +64,22 @@ class EmployeeService {
    * Desativa o registro (exclusão lógica): `activated = false`.
    * @param id Identificador do registro.
    * @param updatedBy Usuário autenticado que executa a operação.
+   * @param authorization Header `Authorization` original, repassado ao `control`.
+   * @returns 409 se houver usuário ativo no `control`; 503 se o `control` não puder ser consultado.
    */
-  async deleteEmployee(id: string, updatedBy: string) {
+  async deleteEmployee(id: string, updatedBy: string, authorization: string) {
     if (!id) return Response.badRequest("ID não informado");
+
+    try {
+      if (await hasActiveUserForEmployee(id, authorization)) {
+        return Response.conflict("Não é possível desativar: o funcionário possui usuário ativo.");
+      }
+    } catch (error) {
+      if (error instanceof ControlUnavailableError) {
+        return Response.unavailable("Não foi possível verificar usuários do funcionário. Tente novamente.");
+      }
+      throw error;
+    }
 
     const [updated] = await this.model.update(
       { activated: false, updatedBy, updatedAt: new Date() },
