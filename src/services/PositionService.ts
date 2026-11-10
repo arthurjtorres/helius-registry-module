@@ -1,5 +1,6 @@
 import { ModelStatic, Op } from "sequelize";
 import Response from "../utils/Response";
+import { EmployeeModel } from "../database/models";
 
 import CreateValidationSchema from "./validations/CreateValidationSchema";
 import UpdateValidationSchema from "./validations/UpdateValidationSchema";
@@ -28,25 +29,56 @@ class PositionService {
     const { error } = UpdateValidationSchema.PositionValidation.validate(data);
     if (error) return Response.badRequest(error.message);
 
-    const [updated] = await this.model.update(data, { where: { positionId: id } });
+    const [updated] = await this.model.update(data, { where: { positionId: id, activated: true } });
     if (!updated) return Response.notFound("Cargo não encontrado!");
 
-    const result = await this.model.findByPk(id);
+    const result = await this.model.findOne({ where: { positionId: id, activated: true } });
 
     return Response.ok("Cargo atualizado com sucesso!", result);
   }
 
-  async deletePosition(id: string) {
-    const deleted = await this.model.destroy({ where: { positionId: id } });
-    if (!deleted) return Response.notFound("Cargo não encontrado!");
+  /**
+   * Desativa o registro (exclusão lógica): `activated = false`.
+   * @param id Identificador do registro.
+   * @param updatedBy Usuário autenticado que executa a operação.
+   */
+  async deletePosition(id: string, updatedBy: string) {
+    if (!id) return Response.badRequest("ID não informado");
 
-    return Response.ok("Cargo deletado com sucesso!");
+    if (await EmployeeModel.count({ where: { fkPositionId: id, activated: true } }) > 0) {
+      return Response.conflict("Não é possível desativar: o cargo possui funcionários ativos.");
+    }
+
+    const [updated] = await this.model.update(
+      { activated: false, updatedBy, updatedAt: new Date() },
+      { where: { positionId: id, activated: true } }
+    );
+    if (!updated) return Response.notFound("Cargo não encontrado!");
+
+    return Response.ok("Cargo desativado com sucesso!");
+  }
+
+  /**
+   * Reativa um registro desativado (`activated = true`).
+   * @param id Identificador do registro.
+   * @param updatedBy Usuário autenticado que executa a operação.
+   */
+  async reactivatePosition(id: string, updatedBy: string) {
+    if (!id) return Response.badRequest("ID não informado");
+
+    const [updated] = await this.model.update(
+      { activated: true, updatedBy, updatedAt: new Date() },
+      { where: { positionId: id, activated: false } }
+    );
+    if (!updated) return Response.notFound("Cargo não encontrado ou já ativo!");
+
+    return Response.ok("Cargo reativado com sucesso!");
   }
 
   async getPosition(id: string) {
     if (!id) return Response.badRequest("ID do cargo não informado.");
 
-    const result = await this.model.findByPk(id);
+    const result = await this.model.findOne({ where: { positionId: id, activated: true } });
 
     if (!result) return Response.notFound("Cargo não encontrado!");
     return Response.ok("Cargo encontrado!", result);
@@ -58,7 +90,7 @@ class PositionService {
     fkSectorId?: string;
     fkDepartmentId?: string;
   }) {
-    const where: any = {};
+    const where: any = { activated: true };
 
     if (query.positionName) {
       where.positionName = { [Op.iLike]: `%${query.positionName}%` };

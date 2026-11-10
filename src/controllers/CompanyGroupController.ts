@@ -39,11 +39,23 @@ class CompanyGroupController {
   async deleteCompanyGroup(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const result = await this.service.deleteCompanyGroup(id);
+      const result = await this.service.deleteCompanyGroup(id, res.locals.user.userId);
       return res.status(result.status).json(result);
     } catch (error) {
       console.error("Erro em deleteCompanyGroup:", error);
       return res.status(500).json("Erro interno ao deletar grupo.");
+    }
+  }
+
+  /** PATCH /:id/reactivate — reativa o registro (`activated = true`). */
+  async reactivateCompanyGroup(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const result = await this.service.reactivateCompanyGroup(id, res.locals.user.userId);
+      return res.status(result.status).json(result);
+    } catch (error) {
+      console.error("Erro em reactivateCompanyGroup:", error);
+      return res.status(500).json("Erro interno ao reativar registro.");
     }
   }
 

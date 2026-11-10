@@ -38,11 +38,23 @@ class PersonController {
   async deletePerson(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const result = await this.service.deletePerson(id);
+      const result = await this.service.deletePerson(id, res.locals.user.userId);
       return res.status(result.status).json(result);
     } catch (error) {
       console.error("Erro em deletePerson:", error);
       return res.status(500).json("Erro interno ao deletar pessoa.");
+    }
+  }
+
+  /** PATCH /:id/reactivate — reativa o registro (`activated = true`). */
+  async reactivatePerson(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const result = await this.service.reactivatePerson(id, res.locals.user.userId);
+      return res.status(result.status).json(result);
+    } catch (error) {
+      console.error("Erro em reactivatePerson:", error);
+      return res.status(500).json("Erro interno ao reativar registro.");
     }
   }
 

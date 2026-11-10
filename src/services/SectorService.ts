@@ -1,5 +1,6 @@
 import { ModelStatic, Op } from "sequelize";
 import Response from "../utils/Response";
+import { EmployeeModel } from "../database/models";
 
 import CreateValidationSchema from "./validations/CreateValidationSchema";
 import UpdateValidationSchema from "./validations/UpdateValidationSchema";
@@ -27,25 +28,56 @@ class SectorService {
     const { error } = UpdateValidationSchema.SectorValidation.validate(data);
     if (error) return Response.badRequest(error.message);
 
-    const [updated] = await this.model.update(data, { where: { sectorId: id } });
+    const [updated] = await this.model.update(data, { where: { sectorId: id, activated: true } });
     if (!updated) return Response.notFound("Setor não encontrado!");
 
-    const result = await this.model.findByPk(id);
+    const result = await this.model.findOne({ where: { sectorId: id, activated: true } });
 
     return Response.ok("Setor atualizado com sucesso!", result);
   }
 
-  async deleteSector(id: string) {
-    const deleted = await this.model.destroy({ where: { sectorId: id } });
-    if (!deleted) return Response.notFound("Setor não encontrado!");
+  /**
+   * Desativa o registro (exclusão lógica): `activated = false`.
+   * @param id Identificador do registro.
+   * @param updatedBy Usuário autenticado que executa a operação.
+   */
+  async deleteSector(id: string, updatedBy: string) {
+    if (!id) return Response.badRequest("ID não informado");
 
-    return Response.ok("Setor deletado com sucesso!");
+    if (await EmployeeModel.count({ where: { fkSectorId: id, activated: true } }) > 0) {
+      return Response.conflict("Não é possível desativar: o setor possui funcionários ativos.");
+    }
+
+    const [updated] = await this.model.update(
+      { activated: false, updatedBy, updatedAt: new Date() },
+      { where: { sectorId: id, activated: true } }
+    );
+    if (!updated) return Response.notFound("Setor não encontrado!");
+
+    return Response.ok("Setor desativado com sucesso!");
+  }
+
+  /**
+   * Reativa um registro desativado (`activated = true`).
+   * @param id Identificador do registro.
+   * @param updatedBy Usuário autenticado que executa a operação.
+   */
+  async reactivateSector(id: string, updatedBy: string) {
+    if (!id) return Response.badRequest("ID não informado");
+
+    const [updated] = await this.model.update(
+      { activated: true, updatedBy, updatedAt: new Date() },
+      { where: { sectorId: id, activated: false } }
+    );
+    if (!updated) return Response.notFound("Setor não encontrado ou já ativo!");
+
+    return Response.ok("Setor reativado com sucesso!");
   }
 
   async getSector(id: string) {
     if (!id) return Response.badRequest("ID do setor não informado.");
 
-    const result = await this.model.findByPk(id);
+    const result = await this.model.findOne({ where: { sectorId: id, activated: true } });
 
     if (!result) return Response.notFound("Setor não encontrado!");
     return Response.ok("Setor encontrado!", result);
@@ -56,7 +88,7 @@ class SectorService {
     sectorAlias?: string;
     sectorIndex?: number;
   }) {
-    const where: any = {};
+    const where: any = { activated: true };
 
     if (query.sectorName) {
       where.sectorName = { [Op.iLike]: `%${query.sectorName}%` };

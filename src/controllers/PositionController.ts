@@ -38,11 +38,23 @@ class PositionController {
   async deletePosition(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const result = await this.service.deletePosition(id);
+      const result = await this.service.deletePosition(id, res.locals.user.userId);
       return res.status(result.status).json(result);
     } catch (error) {
       console.error("Erro em deletePosition:", error);
       return res.status(500).json("Erro interno ao deletar cargo.");
+    }
+  }
+
+  /** PATCH /:id/reactivate — reativa o registro (`activated = true`). */
+  async reactivatePosition(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const result = await this.service.reactivatePosition(id, res.locals.user.userId);
+      return res.status(result.status).json(result);
+    } catch (error) {
+      console.error("Erro em reactivatePosition:", error);
+      return res.status(500).json("Erro interno ao reativar registro.");
     }
   }
 

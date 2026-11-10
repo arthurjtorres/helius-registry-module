@@ -20,6 +20,15 @@ class EmployeeService {
     const { error } = CreateValidationSchema.EmployeeValidation.validate(data);
     if (error) return Response.badRequest(error.message);
 
+    const existing = await this.model.findOne({ where: { registration: data.registration } });
+    if (existing) {
+      return Response.conflict(
+        existing.activated
+          ? "Matrícula já cadastrado(a)."
+          : `Matrícula já existe como registro inativo (id: ${existing.employeeId}). Reative-o em PATCH /employee/${existing.employeeId}/reactivate.`
+      );
+    }
+
     await this.model.create({ ...data });
     return Response.created("Funcionário criado com sucesso!");
   }
@@ -32,39 +41,69 @@ class EmployeeService {
     const { error } = UpdateValidationSchema.EmployeeValidation.validate(data);
     if (error) return Response.badRequest(error.message);
 
-    const [updated] = await this.model.update(data, { where: { employeeId: id } });
+    const [updated] = await this.model.update(data, { where: { employeeId: id, activated: true } });
 
     if (!updated) return Response.notFound("Funcionário não encontrado!");
 
-    const result = await this.model.findByPk(id, {
+    const result = await this.model.findOne({
+      where: { employeeId: id, activated: true },
       include: [
-        { model: PersonModel, as: 'Person' },
-        { model: CompanyModel, as: 'Company' },
-        { model: PositionModel, as: 'Position' },
-        { model: SectorModel, as: 'Sector' },
-        { model: DepartmentModel, as: 'Department' }
+        { model: PersonModel, as: 'Person', where: { activated: true }, required: false },
+        { model: CompanyModel, as: 'Company', where: { activated: true }, required: false },
+        { model: PositionModel, as: 'Position', where: { activated: true }, required: false },
+        { model: SectorModel, as: 'Sector', where: { activated: true }, required: false },
+        { model: DepartmentModel, as: 'Department', where: { activated: true }, required: false }
       ],
     });
 
     return Response.ok("Funcionário atualizado com sucesso!", result);
   }
 
-  async deleteEmployee(id: string) {
-    const deleted = await this.model.destroy({ where: { employeeId: id } });
-    if (!deleted) return Response.notFound("Funcionário não encontrado!");
-    return Response.ok("Funcionário deletado com sucesso!");
+  /**
+   * Desativa o registro (exclusão lógica): `activated = false`.
+   * @param id Identificador do registro.
+   * @param updatedBy Usuário autenticado que executa a operação.
+   */
+  async deleteEmployee(id: string, updatedBy: string) {
+    if (!id) return Response.badRequest("ID não informado");
+
+    const [updated] = await this.model.update(
+      { activated: false, updatedBy, updatedAt: new Date() },
+      { where: { employeeId: id, activated: true } }
+    );
+    if (!updated) return Response.notFound("Funcionário não encontrado!");
+
+    return Response.ok("Funcionário desativado com sucesso!");
+  }
+
+  /**
+   * Reativa um registro desativado (`activated = true`).
+   * @param id Identificador do registro.
+   * @param updatedBy Usuário autenticado que executa a operação.
+   */
+  async reactivateEmployee(id: string, updatedBy: string) {
+    if (!id) return Response.badRequest("ID não informado");
+
+    const [updated] = await this.model.update(
+      { activated: true, updatedBy, updatedAt: new Date() },
+      { where: { employeeId: id, activated: false } }
+    );
+    if (!updated) return Response.notFound("Funcionário não encontrado ou já ativo!");
+
+    return Response.ok("Funcionário reativado com sucesso!");
   }
 
   async getEmployee(id: string) {
     if (!id) return Response.badRequest("ID do funcionário não informado.");
 
-    const result = await this.model.findByPk(id, {
+    const result = await this.model.findOne({
+      where: { employeeId: id, activated: true },
       include: [
-        { model: PersonModel, as: 'Person' },
-        { model: CompanyModel, as: 'Company' },
-        { model: PositionModel, as: 'Position' },
-        { model: SectorModel, as: 'Sector' },
-        { model: DepartmentModel, as: 'Department' }
+        { model: PersonModel, as: 'Person', where: { activated: true }, required: false },
+        { model: CompanyModel, as: 'Company', where: { activated: true }, required: false },
+        { model: PositionModel, as: 'Position', where: { activated: true }, required: false },
+        { model: SectorModel, as: 'Sector', where: { activated: true }, required: false },
+        { model: DepartmentModel, as: 'Department', where: { activated: true }, required: false }
       ],
     });
 
@@ -73,7 +112,7 @@ class EmployeeService {
   }
 
   async findEmployees(query: Partial<EmployeeInterface>) {
-    const where: any = {};
+    const where: any = { activated: true };
 
     if (query.registration) {
       where.registration = { [Op.iLike]: `%${query.registration}%` };
@@ -86,11 +125,11 @@ class EmployeeService {
     const result = await this.model.findAll({
       where,
       include: [
-        { model: PersonModel, as: 'Person' },
-        { model: CompanyModel, as: 'Company' },
-        { model: PositionModel, as: 'Position' },
-        { model: SectorModel, as: 'Sector' },
-        { model: DepartmentModel, as: 'Department' }
+        { model: PersonModel, as: 'Person', where: { activated: true }, required: false },
+        { model: CompanyModel, as: 'Company', where: { activated: true }, required: false },
+        { model: PositionModel, as: 'Position', where: { activated: true }, required: false },
+        { model: SectorModel, as: 'Sector', where: { activated: true }, required: false },
+        { model: DepartmentModel, as: 'Department', where: { activated: true }, required: false }
       ],
     });
 

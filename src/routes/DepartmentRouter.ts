@@ -8,6 +8,7 @@ const controller = new DepartmentController();
 departmentRouter.post("/", verifyToken, controller.createDepartment.bind(controller));
 departmentRouter.put("/:id", verifyToken, controller.updateDepartment.bind(controller));
 departmentRouter.delete("/:id", verifyToken, controller.deleteDepartment.bind(controller));
+departmentRouter.patch("/:id/reactivate", verifyToken, controller.reactivateDepartment.bind(controller));
 departmentRouter.get("/:id", controller.getDepartment.bind(controller));
 departmentRouter.get("/", controller.findDepartments.bind(controller));
 
