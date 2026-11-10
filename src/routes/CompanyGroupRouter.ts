@@ -8,6 +8,7 @@ const controller = new CompanyGroupController();
 companyGroupRouter.post("/", verifyToken, controller.createCompanyGroup.bind(controller));
 companyGroupRouter.put("/:id", verifyToken, controller.updateCompanyGroup.bind(controller));
 companyGroupRouter.delete("/:id", verifyToken, controller.deleteCompanyGroup.bind(controller));
+companyGroupRouter.patch("/:id/reactivate", verifyToken, controller.reactivateCompanyGroup.bind(controller));
 companyGroupRouter.get("/:id", controller.getCompanyGroup.bind(controller));
 companyGroupRouter.get("/", controller.findCompanyGroups.bind(controller));
 
