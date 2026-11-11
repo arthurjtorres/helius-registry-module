@@ -7,6 +7,7 @@ import UpdateValidationSchema from "./validations/UpdateValidationSchema";
 
 import { CompanyModel, CorporationModel, CompanyGroupModel } from "../database/models";
 import CompanyInterface from "../database/interfaces/CompanyInterface";
+import { parseIdList } from "../utils/IdList";
 
 class CompanyService {
   private model: ModelStatic<CompanyModel> = CompanyModel;
@@ -103,6 +104,27 @@ class CompanyService {
 
     if (!result) return Response.notFound("Empresa não encontrada!");
     return Response.ok("Empresa encontrada!", result);
+  }
+
+  /**
+   * Consulta empresas ativas por lista de IDs (usada por outros módulos, T09).
+   * Responde 200 com a lista dos encontrados; IDs inexistentes ou inativos são omitidos
+   * (lista vazia é resposta válida, não 404).
+   * @param ids Lista de UUIDs no corpo da requisição (1 a 500).
+   */
+  async getCompaniesByIds(ids: unknown) {
+    const parsed = parseIdList(ids);
+    if ("error" in parsed) return Response.badRequest(parsed.error);
+
+    const result = await this.model.findAll({
+      where: { companyId: { [Op.in]: parsed.ids }, activated: true },
+      include: [
+        { model: CorporationModel, as: 'Corporation', where: { activated: true }, required: false },
+        { model: CompanyGroupModel, as: 'CompanyGroup', where: { activated: true }, required: false }
+      ],
+    });
+
+    return Response.ok("Empresas consultadas com sucesso.", result);
   }
 
   async findCompanies(query: {
