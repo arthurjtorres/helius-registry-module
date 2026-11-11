@@ -17,6 +17,12 @@ export interface PermissionOptions {
    * entre módulos, ex.: documentos). Padrão: `true` (serviço lê, nunca escreve; ADR-011).
    */
   allowServiceToken?: boolean;
+  /**
+   * Rota marcada com o middleware `allowServiceToken` (consulta em lote por `POST`):
+   * o token de serviço passa também em métodos de escrita. Preenchido a partir de
+   * `res.locals.allowServiceToken`; não deve ser informado manualmente.
+   */
+  serviceMayPost?: boolean;
 }
 
 /** Responde a negação (401/403) e interrompe a cadeia. */
@@ -46,7 +52,7 @@ export const evaluatePermission = (
     if (options.allowServiceToken === false) {
       return Response.forbidden(`O menu ${requiredMenu} não é acessível por token de serviço.`);
     }
-    return SERVICE_SAFE_METHODS.includes(method)
+    return SERVICE_SAFE_METHODS.includes(method) || options.serviceMayPost === true
       ? null
       : Response.forbidden("Token de serviço permite apenas consultas");
   }
@@ -81,6 +87,9 @@ export const evaluatePermission = (
  */
 export const checkPermission = (requiredMenu: string, requiredAction?: PermissionEnum, options?: PermissionOptions) =>
   (req: Request, res: ExpressResponse, next: NextFunction) => {
-    const denied = evaluatePermission(res.locals.user as JwtPayload | undefined, req.method, requiredMenu, requiredAction, options);
+    const denied = evaluatePermission(
+      res.locals.user as JwtPayload | undefined, req.method, requiredMenu, requiredAction,
+      { ...options, serviceMayPost: res.locals.allowServiceToken === true }
+    );
     return denied ? deny(res, denied) : next();
   };

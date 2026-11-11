@@ -71,6 +71,17 @@ class CompanyController {
     }
   }
 
+  /** POST /lookup — consulta empresas por lista de IDs (corpo `{ ids }`). */
+  async lookupCompanies(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await this.service.getCompaniesByIds(req.body?.ids);
+      return res.status(result.status).json(result);
+    } catch (error) {
+      console.error("Erro em lookupCompanies:", error);
+      return res.status(500).json("Erro interno ao consultar empresas em lote.");
+    }
+  }
+
   async findCompanies(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await this.service.findCompanies(req.query);
