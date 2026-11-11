@@ -9,7 +9,7 @@ corporationRouter.post("/", verifyToken, controller.createCorporation.bind(contr
 corporationRouter.put("/:id", verifyToken, controller.updateCorporation.bind(controller));
 corporationRouter.delete("/:id", verifyToken, controller.deleteCorporation.bind(controller));
 corporationRouter.patch("/:id/reactivate", verifyToken, controller.reactivateCorporation.bind(controller));
-corporationRouter.get("/:id", controller.getCorporation.bind(controller));
-corporationRouter.get("/", controller.findCorporations.bind(controller));
+corporationRouter.get("/:id", verifyToken, controller.getCorporation.bind(controller));
+corporationRouter.get("/", verifyToken, controller.findCorporations.bind(controller));
 
 export default corporationRouter;
