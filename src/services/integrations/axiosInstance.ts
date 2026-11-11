@@ -1,4 +1,5 @@
 import axios from "axios";
+import { attachServiceToken } from "./serviceToken";
 
 /**
  * Cliente HTTP do módulo `control`.
@@ -8,5 +9,8 @@ const axiosControl = axios.create({
   baseURL: process.env.CONTROL_API_URL || `http://modulo-controle:${process.env.PORT_API_CONTROLE}`,
   timeout: 5000,
 });
+
+/** Sem `Authorization` do usuário no pedido, a chamada leva o token de serviço. */
+attachServiceToken(axiosControl, "registry");
 
 export default axiosControl;
