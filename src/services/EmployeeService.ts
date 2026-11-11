@@ -1,5 +1,4 @@
 import { ModelStatic, Op } from "sequelize";
-import { parse } from "date-fns";
 
 import Response from "../utils/Response";
 import CreateValidationSchema from "./validations/CreateValidationSchema";
@@ -8,8 +7,7 @@ import UpdateValidationSchema from "./validations/UpdateValidationSchema";
 import { EmployeeModel, PersonModel, CompanyModel, PositionModel, SectorModel, DepartmentModel, DocumentModel } from "../database/models";
 import EmployeeInterface from "../database/interfaces/EmployeeInterface";
 
-import PersonService from "./PersonService";
-import PositionService from "./PositionService";
+import EmployeeBulkService from "./EmployeeBulkService";
 import { hasActiveUserForEmployee, ControlUnavailableError } from "./integrations/UserService";
 
 class EmployeeService {
@@ -154,117 +152,14 @@ class EmployeeService {
     return Response.ok("Funcionários encontrados com sucesso", result);
   }
 
-  async bulkInsert(payload: {
-    companyId: string;
-    userId: string;
-    employees: {
-      registration: string;
-      fullName: string;
-      admissionDate: string;
-      position: string;
-      birthDate: string;
-      cpf?: string;
-    }[];
-  }) {
-
-    const { companyId, userId, employees: employeeList } = payload;
-
-    if (!employeeList.length) {
-      return Response.badRequest("Lista de funcionários vazia.");
-    }
-
-    if (!companyId) {
-      return Response.badRequest("Id da empresa não informado.");
-    }
-
-    const personService = new PersonService();
-    const positionService = new PositionService();
-    const createdEmployees = [];
-
-    for (const emp of employeeList) {
-      const { fullName, registration, admissionDate, position, birthDate, cpf } = emp;
-
-      // Verifica se funcionário já existe
-      const existingEmployee = await this.model.findOne({ where: { registration } });
-      if (existingEmployee) {
-        console.warn(`Funcionário com matrícula ${registration} já existe. Ignorando.`);
-        continue;
-      }
-
-      // Divisão do nome
-      const nameParts = fullName.trim().split(/\s+/);
-      const firstName = nameParts[0];
-      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
-
-      try {
-        const parsedAdmissionDate = parse(admissionDate, "dd/MM/yyyy", new Date());
-        const parsedBirthDate = parse(birthDate, "dd/MM/yyyy", new Date());
-
-        const personPayload = {
-          fullName,
-          firstName,
-          lastName,
-          birthDate: parsedBirthDate, // assumindo que PersonModel aceita essa propriedade
-          activated: true,
-          createdBy: userId,
-        };
-
-        const personResult = await personService.createPerson(personPayload as any);
-        if (personResult.status !== 201 || !('data' in personResult)) {
-          console.error(`Erro ao criar pessoa ${fullName}:`, personResult.message);
-          continue;
-
-        }
-
-        const personData = personResult.data as { personId: string };
-        const fkPersonId = personData.personId;
-
-        if (cpf && cpf.trim() !== "") {
-          const cleanCpf = cpf.replace(/\D/g, ''); // Remove pontos e traços
-          if (cleanCpf.length === 11) {
-            // Importante: Verifique se o DocumentModel está importado no seu arquivo
-            await DocumentModel.create({
-              documentType: 'CPF',
-              documentNumber: cleanCpf,
-              fkPersonId: fkPersonId,
-              activated: true,
-              createdBy: userId,
-            }).catch(err => console.error(`Erro ao salvar CPF de ${fullName}:`, err.message));
-          }
-        }
-
-        // Buscar cargo
-        let fkPositionId: string | undefined = undefined;
-        const positionResult = await positionService.findPositions({ positionName: position });
-        if (positionResult.status === 200 && ('data' in positionResult) && Array.isArray(positionResult.data)) {
-          const positionData = positionResult.data[0] as { positionId: string };
-          fkPositionId = positionData.positionId;
-        } else {
-          console.warn(`Cargo '${position}' não encontrado. Continuando sem atribuir posição.`);
-        }
-
-        await this.model.create({
-          registration,
-          fkPersonId,
-          admissionDate: parsedAdmissionDate,
-          fkPositionId,
-          fkCompanyId: companyId,
-          activated: true,
-          createdBy: userId,
-        });
-
-        createdEmployees.push({
-          registration,
-          fullName,
-        });
-
-      } catch (error) {
-        console.error(`Erro crítico no registro ${registration}:`, error);
-        continue;
-      }
-    }
-
-    return Response.created("Funcionários inseridos com sucesso!", createdEmployees);
+  /**
+   * Importa funcionários em lote (T09): valida tudo, grava numa única transação e devolve
+   * relatório por item. Ver `EmployeeBulkService`.
+   * @param payload Empresa, usuário (do token) e lista de funcionários.
+   * @param options `dryRun`: só valida, sem gravar.
+   */
+  async bulkInsert(payload: { companyId?: unknown; userId?: unknown; employees?: unknown }, options: { dryRun?: boolean } = {}) {
+    return new EmployeeBulkService().importEmployees(payload, options);
   }
 }
 
