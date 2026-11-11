@@ -86,10 +86,10 @@ class EmployeeController {
         ...req.body,
         userId: user.userId
       }
-    const result = await this.service.bulkInsert(data);
+    const result = await this.service.bulkInsert(data, { dryRun: req.query.dryRun === "true" });
     return res.status(result.status).json(result);
   } catch (error) {
-    console.error("Erro em bulkInsertFromTxt:", error);
+    console.error("Erro em bulkInsert:", error);
     return res.status(500).json("Erro interno ao importar funcionários em lote.");
   }
 }
