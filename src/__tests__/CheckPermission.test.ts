@@ -100,3 +100,24 @@ describe('middleware checkPermission', () => {
     expect(r.next).toBe(false);
   });
 });
+
+describe('consulta em lote por POST (allowServiceToken)', () => {
+  it('serviço só passa em POST quando a rota está marcada', () => {
+    expect(evaluatePermission(service, 'POST', 'EMPRESAS', PermissionEnum.READ)?.status).toBe(403);
+    expect(evaluatePermission(service, 'POST', 'EMPRESAS', PermissionEnum.READ, { serviceMayPost: true })).toBeNull();
+  });
+  it('middleware lê res.locals.allowServiceToken; DELETE de rota não marcada segue negado', () => {
+    const mw = checkPermission('EMPRESAS', PermissionEnum.READ);
+    expect(run(mw, service, 'POST').status).toBe(403);
+    const r = { status: 0, next: false };
+    const res = { locals: { user: service, allowServiceToken: true }, status(c: number) { r.status = c; return this; }, json() { return this; } } as unknown as ExpressResponse;
+    mw({ method: 'POST', params: {} } as unknown as Request, res, () => { r.next = true; });
+    expect(r.next).toBe(true);
+    expect(run(checkPermission('EMPRESAS', PermissionEnum.DELETE), service, 'DELETE').status).toBe(403);
+  });
+  it('usuário precisa do menu e da ação READ na rota de lookup', () => {
+    const mw = checkPermission('EMPRESAS', PermissionEnum.READ);
+    expect(run(mw, user({ allowedMenus: [] }), 'POST').status).toBe(403);
+    expect(run(mw, user({ allowedMenus: [{ menu: 'EMPRESAS', permissions: ['READ'] }] }), 'POST').next).toBe(true);
+  });
+});
