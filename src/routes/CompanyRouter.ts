@@ -9,7 +9,7 @@ companyRouter.post("/", verifyToken, controller.createCompany.bind(controller));
 companyRouter.put("/:id", verifyToken, controller.updateCompany.bind(controller));
 companyRouter.delete("/:id", verifyToken, controller.deleteCompany.bind(controller));
 companyRouter.patch("/:id/reactivate", verifyToken, controller.reactivateCompany.bind(controller));
-companyRouter.get("/:id", controller.getCompany.bind(controller));
-companyRouter.get("/", controller.findCompanies.bind(controller));
+companyRouter.get("/:id", verifyToken, controller.getCompany.bind(controller));
+companyRouter.get("/", verifyToken, controller.findCompanies.bind(controller));
 
 export default companyRouter;

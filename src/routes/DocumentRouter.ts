@@ -9,7 +9,7 @@ documentRouter.post("/", verifyToken, controller.createDocument.bind(controller)
 documentRouter.put("/:id", verifyToken, controller.updateDocument.bind(controller));
 documentRouter.delete("/:id", verifyToken, controller.deleteDocument.bind(controller));
 documentRouter.patch("/:id/reactivate", verifyToken, controller.reactivateDocument.bind(controller));
-documentRouter.get("/:id", controller.getDocument.bind(controller));
-documentRouter.get("/", controller.findDocuments.bind(controller));
+documentRouter.get("/:id", verifyToken, controller.getDocument.bind(controller));
+documentRouter.get("/", verifyToken, controller.findDocuments.bind(controller));
 
 export default documentRouter;
