@@ -9,7 +9,7 @@ departmentRouter.post("/", verifyToken, controller.createDepartment.bind(control
 departmentRouter.put("/:id", verifyToken, controller.updateDepartment.bind(controller));
 departmentRouter.delete("/:id", verifyToken, controller.deleteDepartment.bind(controller));
 departmentRouter.patch("/:id/reactivate", verifyToken, controller.reactivateDepartment.bind(controller));
-departmentRouter.get("/:id", controller.getDepartment.bind(controller));
-departmentRouter.get("/", controller.findDepartments.bind(controller));
+departmentRouter.get("/:id", verifyToken, controller.getDepartment.bind(controller));
+departmentRouter.get("/", verifyToken, controller.findDepartments.bind(controller));
 
 export default departmentRouter;
