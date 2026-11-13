@@ -1,4 +1,6 @@
 import { Request, Response, NextFunction } from "express";
+import { logError } from "../utils/logError";
+import Resp from "../utils/Response";
 import EmployeeService from "../services/EmployeeService";
 
 class EmployeeController {
@@ -14,8 +16,9 @@ class EmployeeController {
       const result = await this.service.createEmployee(data);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em createEmployee:", error);
-      return res.status(500).json("Erro interno ao criar funcionário.");
+      logError("Erro em createEmployee", error);
+      const resp = Resp.internalError("Erro interno ao criar funcionário.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -30,8 +33,9 @@ class EmployeeController {
       const result = await this.service.updateEmployee(id, data);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em updateEmployee:", error);
-      return res.status(500).json("Erro interno ao atualizar funcionário.");
+      logError("Erro em updateEmployee", error);
+      const resp = Resp.internalError("Erro interno ao atualizar funcionário.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -41,8 +45,9 @@ class EmployeeController {
       const result = await this.service.deleteEmployee(id, res.locals.user.userId, req.header('Authorization') ?? '');
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em deleteEmployee:", error);
-      return res.status(500).json("Erro interno ao deletar funcionário.");
+      logError("Erro em deleteEmployee", error);
+      const resp = Resp.internalError("Erro interno ao deletar funcionário.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -53,8 +58,9 @@ class EmployeeController {
       const result = await this.service.reactivateEmployee(id, res.locals.user.userId);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em reactivateEmployee:", error);
-      return res.status(500).json("Erro interno ao reativar registro.");
+      logError("Erro em reactivateEmployee", error);
+      const resp = Resp.internalError("Erro interno ao reativar registro.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -64,8 +70,9 @@ class EmployeeController {
       const result = await this.service.getEmployee(id);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em getEmployee:", error);
-      return res.status(500).json("Erro interno ao buscar funcionário.");
+      logError("Erro em getEmployee", error);
+      const resp = Resp.internalError("Erro interno ao buscar funcionário.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -74,8 +81,9 @@ class EmployeeController {
       const result = await this.service.findEmployees(req.query);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em findEmployees:", error);
-      return res.status(500).json("Erro interno ao buscar funcionários.");
+      logError("Erro em findEmployees", error);
+      const resp = Resp.internalError("Erro interno ao buscar funcionários.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -89,8 +97,9 @@ class EmployeeController {
     const result = await this.service.bulkInsert(data, { dryRun: req.query.dryRun === "true" });
     return res.status(result.status).json(result);
   } catch (error) {
-    console.error("Erro em bulkInsert:", error);
-    return res.status(500).json("Erro interno ao importar funcionários em lote.");
+    logError("Erro em bulkInsert", error);
+    const resp = Resp.internalError("Erro interno ao importar funcionários em lote.");
+    return res.status(resp.status).json(resp);
   }
 }
 
