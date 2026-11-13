@@ -1,4 +1,6 @@
 import { Request, Response, NextFunction } from "express";
+import { logError } from "../utils/logError";
+import Resp from "../utils/Response";
 import DocumentService from "../services/DocumentService";
 
 class DocumentController {
@@ -14,8 +16,9 @@ class DocumentController {
       const result = await this.service.createDocument(data);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em createDocument:", error);
-      return res.status(500).json("Erro interno ao criar documento.");
+      logError("Erro em createDocument", error);
+      const resp = Resp.internalError("Erro interno ao criar documento.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -30,8 +33,9 @@ class DocumentController {
       const result = await this.service.updateDocument(id, data);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em updateDocument:", error);
-      return res.status(500).json("Erro interno ao atualizar documento.");
+      logError("Erro em updateDocument", error);
+      const resp = Resp.internalError("Erro interno ao atualizar documento.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -41,8 +45,9 @@ class DocumentController {
       const result = await this.service.deleteDocument(id, res.locals.user.userId);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em deleteDocument:", error);
-      return res.status(500).json("Erro interno ao deletar documento.");
+      logError("Erro em deleteDocument", error);
+      const resp = Resp.internalError("Erro interno ao deletar documento.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -53,8 +58,9 @@ class DocumentController {
       const result = await this.service.reactivateDocument(id, res.locals.user.userId);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em reactivateDocument:", error);
-      return res.status(500).json("Erro interno ao reativar registro.");
+      logError("Erro em reactivateDocument", error);
+      const resp = Resp.internalError("Erro interno ao reativar registro.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -64,8 +70,9 @@ class DocumentController {
       const result = await this.service.getDocument(id);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em getDocument:", error);
-      return res.status(500).json("Erro interno ao buscar documento.");
+      logError("Erro em getDocument", error);
+      const resp = Resp.internalError("Erro interno ao buscar documento.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -74,8 +81,9 @@ class DocumentController {
       const result = await this.service.findDocuments(req.query);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em findDocuments:", error);
-      return res.status(500).json("Erro interno ao buscar documentos.");
+      logError("Erro em findDocuments", error);
+      const resp = Resp.internalError("Erro interno ao buscar documentos.");
+      return res.status(resp.status).json(resp);
     }
   }
 }

@@ -1,6 +1,7 @@
-import express, { NextFunction, Request, Response } from "express";
+import express from "express";
 import cors from 'cors';
 import router from "./routes";
+import errorHandler from "./middlewares/ErrorHandler";
 import "dotenv/config";
 
 const app = express();
@@ -46,9 +47,6 @@ app.use(express.json({ limit: "1mb" })); // importação em lote (até 500 itens
 app.use(router);
 app.get('/', (req, res) => res.status(200).send('Rodando cadastro aqui!'));
 
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  return res.status(500).json({ message: err.message});
-  next();
-})
+app.use(errorHandler);
 
 export default app;

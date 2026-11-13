@@ -1,4 +1,6 @@
 import { Request, Response, NextFunction } from "express";
+import { logError } from "../utils/logError";
+import Resp from "../utils/Response";
 import PositionService from "../services/PositionService";
 
 class PositionController {
@@ -14,8 +16,9 @@ class PositionController {
       const result = await this.service.createPosition(data);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em createPosition:", error);
-      return res.status(500).json("Erro interno ao criar cargo.");
+      logError("Erro em createPosition", error);
+      const resp = Resp.internalError("Erro interno ao criar cargo.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -30,8 +33,9 @@ class PositionController {
       const result = await this.service.updatePosition(id, data);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em updatePosition:", error);
-      return res.status(500).json("Erro interno ao atualizar cargo.");
+      logError("Erro em updatePosition", error);
+      const resp = Resp.internalError("Erro interno ao atualizar cargo.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -41,8 +45,9 @@ class PositionController {
       const result = await this.service.deletePosition(id, res.locals.user.userId);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em deletePosition:", error);
-      return res.status(500).json("Erro interno ao deletar cargo.");
+      logError("Erro em deletePosition", error);
+      const resp = Resp.internalError("Erro interno ao deletar cargo.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -53,8 +58,9 @@ class PositionController {
       const result = await this.service.reactivatePosition(id, res.locals.user.userId);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em reactivatePosition:", error);
-      return res.status(500).json("Erro interno ao reativar registro.");
+      logError("Erro em reactivatePosition", error);
+      const resp = Resp.internalError("Erro interno ao reativar registro.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -64,8 +70,9 @@ class PositionController {
       const result = await this.service.getPosition(id);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em getPosition:", error);
-      return res.status(500).json("Erro interno ao buscar cargo.");
+      logError("Erro em getPosition", error);
+      const resp = Resp.internalError("Erro interno ao buscar cargo.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -74,8 +81,9 @@ class PositionController {
       const result = await this.service.findPositions(req.query);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em findPositions:", error);
-      return res.status(500).json("Erro interno ao buscar cargos.");
+      logError("Erro em findPositions", error);
+      const resp = Resp.internalError("Erro interno ao buscar cargos.");
+      return res.status(resp.status).json(resp);
     }
   }
 }
