@@ -3,6 +3,11 @@
 **/build/
 **/dist/
 
+# Saída compilada dentro de src/database/config (o build vai para build/).
+# Não usar src/**/*.js: as migrations antigas são .js versionados.
+src/database/config/*.js
+src/database/config/*.d.ts
+
 # Ignorar logs e arquivos temporários comuns
 *.txt
 *.lock
