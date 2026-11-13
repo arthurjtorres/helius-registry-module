@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { logError } from "../utils/logError";
 import Resp from "../utils/Response";
 import EmployeeService from "../services/EmployeeService";
+import { parseImportOptions } from "../utils/EmployeeUpsert";
 
 class EmployeeController {
   private service = new EmployeeService();
@@ -94,7 +95,12 @@ class EmployeeController {
         ...req.body,
         userId: user.userId
       }
-    const result = await this.service.bulkInsert(data, { dryRun: req.query.dryRun === "true" });
+    const parsed = parseImportOptions(req.query, req.body);
+    if ("error" in parsed) {
+      const resp = Resp.badRequest(parsed.error);
+      return res.status(resp.status).json(resp);
+    }
+    const result = await this.service.bulkInsert(data, parsed.options);
     return res.status(result.status).json(result);
   } catch (error) {
     logError("Erro em bulkInsert", error);
