@@ -1,5 +1,5 @@
 import { validateEmployeeItems } from '../utils/EmployeeImport';
-import { compareEmployee, ComparisonInput, ComparisonResult, isConflict, toDateOnly } from '../utils/EmployeeUpsert';
+import { compareEmployee, ComparisonInput, ComparisonResult, isConflict, parseImportOptions, toDateOnly } from '../utils/EmployeeUpsert';
 
 const companyId = 'c-1';
 const positionId = 'p-motorista';
@@ -85,5 +85,22 @@ describe('compareEmployee', () => {
 
   it('CPF cadastrado e planilha sem CPF não é conflito nem mudança', () => {
     expect(changesOf(input({ personCpf: '52998224725' })).changes).toEqual([]);
+  });
+});
+
+describe('parseImportOptions', () => {
+  it('padrão é insert, sem dryRun', () => {
+    expect(parseImportOptions({}, {})).toEqual({ options: { dryRun: false, mode: 'insert', reactivate: false, confirmIds: [] } });
+  });
+  it('lê upsert, reactivate, dryRun e confirmIds', () => {
+    expect(parseImportOptions({ mode: 'upsert', reactivate: 'true', dryRun: 'true' }, { confirmIds: ['e-1'] }))
+      .toEqual({ options: { dryRun: true, mode: 'upsert', reactivate: true, confirmIds: ['e-1'] } });
+  });
+  it('rejeita mode desconhecido, confirmIds fora de lista e opções de upsert em insert', () => {
+    expect(parseImportOptions({ mode: 'replace' }, {})).toHaveProperty('error');
+    expect(parseImportOptions({ mode: 'upsert' }, { confirmIds: 'e-1' })).toHaveProperty('error');
+    expect(parseImportOptions({ mode: 'upsert' }, { confirmIds: [1] })).toHaveProperty('error');
+    expect(parseImportOptions({}, { confirmIds: ['e-1'] })).toHaveProperty('error');
+    expect(parseImportOptions({ reactivate: 'true' }, {})).toHaveProperty('error');
   });
 });

@@ -117,5 +117,33 @@ export const compareEmployee = (input: ComparisonInput): ComparisonConflict | Co
   return result;
 };
 
+/** Opções da importação lidas da requisição (mesmo formato de `ImportOptions` do serviço). */
+export interface ParsedImportOptions {
+  dryRun: boolean;
+  mode: "insert" | "upsert";
+  reactivate: boolean;
+  confirmIds: string[];
+}
+
+/**
+ * Lê `?dryRun`, `?mode`, `?reactivate` e `confirmIds` (corpo) da importação em lote.
+ * @returns As opções, ou a mensagem de erro para responder 400.
+ */
+export const parseImportOptions = (
+  query: Record<string, unknown>,
+  body: Record<string, unknown> | undefined
+): { options: ParsedImportOptions } | { error: string } => {
+  const mode = query.mode ?? "insert";
+  if (mode !== "insert" && mode !== "upsert") return { error: "Parâmetro mode inválido: use insert ou upsert." };
+  const confirmIds: unknown = body?.confirmIds ?? [];
+  if (!Array.isArray(confirmIds) || !confirmIds.every(id => typeof id === "string")) {
+    return { error: "confirmIds deve ser uma lista de ids." };
+  }
+  if (mode === "insert" && (confirmIds.length || query.reactivate === "true")) {
+    return { error: "confirmIds e reactivate só valem com mode=upsert." };
+  }
+  return { options: { dryRun: query.dryRun === "true", mode, reactivate: query.reactivate === "true", confirmIds: confirmIds as string[] } };
+};
+
 /** `true` se a comparação terminou em conflito. */
 export const isConflict = (r: ComparisonConflict | ComparisonResult): r is ComparisonConflict => "conflict" in r;
