@@ -7,7 +7,7 @@ import UpdateValidationSchema from "./validations/UpdateValidationSchema";
 import { EmployeeModel, PersonModel, CompanyModel, PositionModel, SectorModel, DepartmentModel, DocumentModel } from "../database/models";
 import EmployeeInterface from "../database/interfaces/EmployeeInterface";
 
-import EmployeeBulkService from "./EmployeeBulkService";
+import EmployeeBulkService, { ImportOptions } from "./EmployeeBulkService";
 import { hasActiveUserForEmployee, ControlUnavailableError } from "./integrations/UserService";
 
 class EmployeeService {
@@ -158,7 +158,7 @@ class EmployeeService {
    * @param payload Empresa, usuário (do token) e lista de funcionários.
    * @param options `dryRun`: só valida, sem gravar.
    */
-  async bulkInsert(payload: { companyId?: unknown; userId?: unknown; employees?: unknown }, options: { dryRun?: boolean } = {}) {
+  async bulkInsert(payload: { companyId?: unknown; userId?: unknown; employees?: unknown }, options: ImportOptions = {}) {
     return new EmployeeBulkService().importEmployees(payload, options);
   }
 }
