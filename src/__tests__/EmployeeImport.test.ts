@@ -95,9 +95,17 @@ describe('matrícula com a sigla da empresa', () => {
     expect(buildRegistration(8598, 'PS')).toBe('PS8598');
     expect(buildRegistration('008598', 'PS')).toBe('PS008598');
   });
-  it('aceita a sigla da própria empresa, sem diferenciar caixa', () => {
+  it('aceita a sigla da própria empresa, sem diferenciar caixa, com ou sem hífen (formato da tela atual)', () => {
     expect(buildRegistration('PS8598', 'PS')).toBe('PS8598');
     expect(buildRegistration('ps8598', 'PS')).toBe('PS8598');
+    expect(buildRegistration('PS-8598', 'PS')).toBe('PS8598');
+    expect(buildRegistration('ps - 8598', 'PS')).toBe('PS8598');
+  });
+  it('hífen só vale entre a sigla e o número', () => {
+    expect(buildRegistration('-8598', 'PS')).toBeNull();
+    expect(buildRegistration('PS--8598', 'PS')).toBeNull();
+    expect(buildRegistration('VR-8598', 'PS')).toBeNull();
+    expect(buildRegistration('PS-', 'PS')).toBeNull();
   });
   it('rejeita sigla de outra empresa, letras soltas, número negativo ou fracionado e sigla sem número', () => {
     expect(buildRegistration('VR1596', 'PS')).toBeNull();
