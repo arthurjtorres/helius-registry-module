@@ -1,4 +1,6 @@
 import { Request, Response, NextFunction } from "express";
+import { logError } from "../utils/logError";
+import Resp from "../utils/Response";
 import CorporationService from "../services/CorporationService";
 
 class CorporationController {
@@ -14,8 +16,9 @@ class CorporationController {
       const result = await this.service.createCorporation(data);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em createCorporation:", error);
-      return res.status(500).json("Erro interno ao criar organização.");
+      logError("Erro em createCorporation", error);
+      const resp = Resp.internalError("Erro interno ao criar organização.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -30,8 +33,9 @@ class CorporationController {
       const result = await this.service.updateCorporation(id, data);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em updateCorporation:", error);
-      return res.status(500).json("Erro interno ao atualizar organização.");
+      logError("Erro em updateCorporation", error);
+      const resp = Resp.internalError("Erro interno ao atualizar organização.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -41,8 +45,9 @@ class CorporationController {
       const result = await this.service.deleteCorporation(id, res.locals.user.userId);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em deleteCorporation:", error);
-      return res.status(500).json("Erro interno ao deletar organização.");
+      logError("Erro em deleteCorporation", error);
+      const resp = Resp.internalError("Erro interno ao deletar organização.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -53,8 +58,9 @@ class CorporationController {
       const result = await this.service.reactivateCorporation(id, res.locals.user.userId);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em reactivateCorporation:", error);
-      return res.status(500).json("Erro interno ao reativar registro.");
+      logError("Erro em reactivateCorporation", error);
+      const resp = Resp.internalError("Erro interno ao reativar registro.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -64,8 +70,9 @@ class CorporationController {
       const result = await this.service.getCorporation(id);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em getCorporation:", error);
-      return res.status(500).json("Erro interno ao buscar organização.");
+      logError("Erro em getCorporation", error);
+      const resp = Resp.internalError("Erro interno ao buscar organização.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -74,8 +81,9 @@ class CorporationController {
       const result = await this.service.findCorporations(req.query);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em findCorporations:", error);
-      return res.status(500).json("Erro interno ao buscar organizações.");
+      logError("Erro em findCorporations", error);
+      const resp = Resp.internalError("Erro interno ao buscar organizações.");
+      return res.status(resp.status).json(resp);
     }
   }
 }

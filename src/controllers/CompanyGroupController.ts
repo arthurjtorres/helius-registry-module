@@ -1,4 +1,6 @@
 import { Request, Response, NextFunction } from "express";
+import { logError } from "../utils/logError";
+import Resp from "../utils/Response";
 import CompanyGroupService from "../services/CompanyGroupService";
 
 class CompanyGroupController {
@@ -15,8 +17,9 @@ class CompanyGroupController {
 
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em createCompanyGroup:", error);
-      return res.status(500).json("Erro interno ao criar grupo.");
+      logError("Erro em createCompanyGroup", error);
+      const resp = Resp.internalError("Erro interno ao criar grupo.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -31,8 +34,9 @@ class CompanyGroupController {
       const result = await this.service.updateCompanyGroup(id, data);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em updateCompanyGroup:", error);
-      return res.status(500).json("Erro interno ao atualizar grupo.");
+      logError("Erro em updateCompanyGroup", error);
+      const resp = Resp.internalError("Erro interno ao atualizar grupo.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -42,8 +46,9 @@ class CompanyGroupController {
       const result = await this.service.deleteCompanyGroup(id, res.locals.user.userId);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em deleteCompanyGroup:", error);
-      return res.status(500).json("Erro interno ao deletar grupo.");
+      logError("Erro em deleteCompanyGroup", error);
+      const resp = Resp.internalError("Erro interno ao deletar grupo.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -54,8 +59,9 @@ class CompanyGroupController {
       const result = await this.service.reactivateCompanyGroup(id, res.locals.user.userId);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em reactivateCompanyGroup:", error);
-      return res.status(500).json("Erro interno ao reativar registro.");
+      logError("Erro em reactivateCompanyGroup", error);
+      const resp = Resp.internalError("Erro interno ao reativar registro.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -65,8 +71,9 @@ class CompanyGroupController {
       const result = await this.service.getCompanyGroup(id);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em getCompanyGroup:", error);
-      return res.status(500).json("Erro interno ao buscar grupo.");
+      logError("Erro em getCompanyGroup", error);
+      const resp = Resp.internalError("Erro interno ao buscar grupo.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -75,8 +82,9 @@ class CompanyGroupController {
       const result = await this.service.findCompanyGroups(req.query);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em findCompanyGroups:", error);
-      return res.status(500).json("Erro interno ao buscar grupos.");
+      logError("Erro em findCompanyGroups", error);
+      const resp = Resp.internalError("Erro interno ao buscar grupos.");
+      return res.status(resp.status).json(resp);
     }
   }
 }

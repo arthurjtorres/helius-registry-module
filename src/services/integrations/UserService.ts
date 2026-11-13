@@ -1,6 +1,7 @@
 import axios from "axios";
 import axiosControl from "./axiosInstance";
 import { controlRoutes } from "./endpoints";
+import { logError } from "../../utils/logError";
 
 /** Falha ao consultar o `control` (indisponível, erro ou resposta inesperada). */
 export class ControlUnavailableError extends Error {}
@@ -22,8 +23,7 @@ export const hasActiveUserForEmployee = async (employeeId: string, authorization
     return Array.isArray(response.data?.data) && response.data.data.length > 0;
   } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response?.status === 404) return false;
-    const detail = axios.isAxiosError(error) ? (error.response?.status ?? error.code) : "erro desconhecido";
-    console.error(`Falha ao consultar usuários do funcionário no control: ${detail}`);
+    logError("Falha ao consultar usuários do funcionário no control", error);
     throw new ControlUnavailableError("Módulo de controle indisponível.");
   }
 };

@@ -1,4 +1,6 @@
 import { Request, Response, NextFunction } from "express";
+import { logError } from "../utils/logError";
+import Resp from "../utils/Response";
 import PersonService from "../services/PersonService";
 
 class PersonController {
@@ -14,8 +16,9 @@ class PersonController {
       const result = await this.service.createPerson(data);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em createPerson:", error);
-      return res.status(500).json("Erro interno ao criar pessoa.");
+      logError("Erro em createPerson", error);
+      const resp = Resp.internalError("Erro interno ao criar pessoa.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -30,8 +33,9 @@ class PersonController {
       const result = await this.service.updatePerson(id, data);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em updatePerson:", error);
-      return res.status(500).json("Erro interno ao atualizar pessoa.");
+      logError("Erro em updatePerson", error);
+      const resp = Resp.internalError("Erro interno ao atualizar pessoa.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -41,8 +45,9 @@ class PersonController {
       const result = await this.service.deletePerson(id, res.locals.user.userId);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em deletePerson:", error);
-      return res.status(500).json("Erro interno ao deletar pessoa.");
+      logError("Erro em deletePerson", error);
+      const resp = Resp.internalError("Erro interno ao deletar pessoa.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -53,8 +58,9 @@ class PersonController {
       const result = await this.service.reactivatePerson(id, res.locals.user.userId);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em reactivatePerson:", error);
-      return res.status(500).json("Erro interno ao reativar registro.");
+      logError("Erro em reactivatePerson", error);
+      const resp = Resp.internalError("Erro interno ao reativar registro.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -64,8 +70,9 @@ class PersonController {
       const result = await this.service.getPerson(id);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em getPerson:", error);
-      return res.status(500).json("Erro interno ao buscar pessoa.");
+      logError("Erro em getPerson", error);
+      const resp = Resp.internalError("Erro interno ao buscar pessoa.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -74,8 +81,9 @@ class PersonController {
       const result = await this.service.findPersons(req.query);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em findPersons:", error);
-      return res.status(500).json("Erro interno ao buscar pessoas.");
+      logError("Erro em findPersons", error);
+      const resp = Resp.internalError("Erro interno ao buscar pessoas.");
+      return res.status(resp.status).json(resp);
     }
   }
 }
