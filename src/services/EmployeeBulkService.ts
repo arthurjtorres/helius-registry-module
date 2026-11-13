@@ -83,10 +83,11 @@ class EmployeeBulkService {
       return { status: 400, message: `Máximo de ${MAX_BULK_ITEMS} funcionários por importação.` };
     }
 
-    const company = await CompanyModel.findOne({ where: { companyId, activated: true } });
+    const company = await CompanyModel.findOne({ where: { companyId, activated: true }, attributes: ["companyId", "companyAcronym"] });
     if (!company) return { status: 400, message: "Empresa não encontrada ou inativa." };
 
-    const { valid, failed } = validateEmployeeItems(employees);
+    // Matrícula gravada = sigla da empresa + número (a planilha traz só o número)
+    const { valid, failed } = validateEmployeeItems(employees, company.companyAcronym);
 
     // Matrículas já cadastradas: ativa → ignora; inativa → conflito (ADR-010)
     const existing = valid.length

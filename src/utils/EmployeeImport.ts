@@ -98,12 +98,33 @@ const text = (value: unknown): string | null =>
   typeof value === "string" && value.trim() !== "" ? value.trim() : null;
 
 /**
+ * Monta a matrícula como é gravada: sigla da empresa + número (as matrículas são sequenciais
+ * por empresa; a sigla as torna únicas no banco, ex.: `PS8598`). Aceita só o número (`8598`,
+ * texto ou inteiro) ou o número já com a sigla da própria empresa, sem diferenciar caixa.
+ * @param raw Matrícula recebida.
+ * @param acronym Sigla da empresa da importação (`company.company_acronym`).
+ * @returns A matrícula com a sigla em maiúsculas, ou `null` se o formato não bater.
+ */
+export const buildRegistration = (raw: unknown, acronym: string): string | null => {
+  const prefix = acronym.trim().toUpperCase();
+  const value = typeof raw === "number" && Number.isSafeInteger(raw) && raw >= 0
+    ? String(raw)
+    : typeof raw === "string" ? raw.replace(/\s+/g, "").toUpperCase() : "";
+  const number = value.startsWith(prefix) ? value.slice(prefix.length) : value;
+  return prefix && /^\d+$/.test(number) ? `${prefix}${number}` : null;
+};
+
+/**
  * Valida o formato de cada item da importação e detecta repetições dentro da própria lista
  * (matrícula e CPF). Não consulta o banco.
  * @param items Lista recebida no corpo da requisição.
+ * @param companyAcronym Sigla da empresa da importação, usada para montar a matrícula.
  * @returns Itens válidos e as falhas (uma por problema, com linha e campo).
  */
-export const validateEmployeeItems = (items: unknown[]): { valid: ValidEmployeeItem[]; failed: ItemFailure[] } => {
+export const validateEmployeeItems = (
+  items: unknown[],
+  companyAcronym: string
+): { valid: ValidEmployeeItem[]; failed: ItemFailure[] } => {
   const valid: ValidEmployeeItem[] = [];
   const failed: ItemFailure[] = [];
   const seenRegistration = new Map<string, number>();
@@ -114,8 +135,13 @@ export const validateEmployeeItems = (items: unknown[]): { valid: ValidEmployeeI
     const item = (raw && typeof raw === "object" ? raw : {}) as RawEmployeeItem;
     const problems: Omit<ItemFailure, "line" | "registration" | "code">[] = [];
 
-    const registration = text(item.registration);
-    if (!registration) problems.push({ field: "registration", error: "Matrícula não informada." });
+    const rawRegistration = typeof item.registration === "number" ? item.registration : text(item.registration);
+    const registration = rawRegistration === null ? null : buildRegistration(rawRegistration, companyAcronym);
+    if (rawRegistration === null) problems.push({ field: "registration", error: "Matrícula não informada." });
+    else if (!registration) problems.push({
+      field: "registration",
+      error: `Matrícula inválida: informe o número ou a sigla da empresa (${companyAcronym.trim().toUpperCase()}) seguida do número.`,
+    });
     else if (registration.length > MAX_TEXT_LENGTH) problems.push({ field: "registration", error: `Matrícula longa demais (máximo ${MAX_TEXT_LENGTH} caracteres).` });
 
     const fullName = text(item.fullName);
