@@ -100,7 +100,8 @@ const text = (value: unknown): string | null =>
 /**
  * Monta a matrícula como é gravada: sigla da empresa + número (as matrículas são sequenciais
  * por empresa; a sigla as torna únicas no banco, ex.: `PS8598`). Aceita só o número (`8598`,
- * texto ou inteiro) ou o número já com a sigla da própria empresa, sem diferenciar caixa.
+ * texto ou inteiro) ou o número já com a sigla da própria empresa, sem diferenciar caixa, com ou
+ * sem hífen entre os dois (`PS-8598`, formato que a tela atual do front envia). Grava sem hífen.
  * @param raw Matrícula recebida.
  * @param acronym Sigla da empresa da importação (`company.company_acronym`).
  * @returns A matrícula com a sigla em maiúsculas, ou `null` se o formato não bater.
@@ -110,7 +111,7 @@ export const buildRegistration = (raw: unknown, acronym: string): string | null 
   const value = typeof raw === "number" && Number.isSafeInteger(raw) && raw >= 0
     ? String(raw)
     : typeof raw === "string" ? raw.replace(/\s+/g, "").toUpperCase() : "";
-  const number = value.startsWith(prefix) ? value.slice(prefix.length) : value;
+  const number = value.startsWith(prefix) ? value.slice(prefix.length).replace(/^-/, "") : value;
   return prefix && /^\d+$/.test(number) ? `${prefix}${number}` : null;
 };
 
