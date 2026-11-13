@@ -1,4 +1,6 @@
 import { Request, Response, NextFunction } from "express";
+import { logError } from "../utils/logError";
+import Resp from "../utils/Response";
 import DepartmentService from "../services/DepartmentService";
 
 class DepartmentController {
@@ -14,8 +16,9 @@ class DepartmentController {
       const result = await this.service.createDepartment(data);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em createDepartment:", error);
-      return res.status(500).json("Erro interno ao criar departamento.");
+      logError("Erro em createDepartment", error);
+      const resp = Resp.internalError("Erro interno ao criar departamento.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -30,8 +33,9 @@ class DepartmentController {
       const result = await this.service.updateDepartment(id, data);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em updateDepartment:", error);
-      return res.status(500).json("Erro interno ao atualizar departamento.");
+      logError("Erro em updateDepartment", error);
+      const resp = Resp.internalError("Erro interno ao atualizar departamento.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -41,8 +45,9 @@ class DepartmentController {
       const result = await this.service.deleteDepartment(id, res.locals.user.userId);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em deleteDepartment:", error);
-      return res.status(500).json("Erro interno ao deletar departamento.");
+      logError("Erro em deleteDepartment", error);
+      const resp = Resp.internalError("Erro interno ao deletar departamento.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -53,8 +58,9 @@ class DepartmentController {
       const result = await this.service.reactivateDepartment(id, res.locals.user.userId);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em reactivateDepartment:", error);
-      return res.status(500).json("Erro interno ao reativar registro.");
+      logError("Erro em reactivateDepartment", error);
+      const resp = Resp.internalError("Erro interno ao reativar registro.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -64,8 +70,9 @@ class DepartmentController {
       const result = await this.service.getDepartment(id);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em getDepartment:", error);
-      return res.status(500).json("Erro interno ao buscar departamento.");
+      logError("Erro em getDepartment", error);
+      const resp = Resp.internalError("Erro interno ao buscar departamento.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -74,8 +81,9 @@ class DepartmentController {
       const result = await this.service.findDepartments(req.query);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em findDepartments:", error);
-      return res.status(500).json("Erro interno ao buscar departamentos.");
+      logError("Erro em findDepartments", error);
+      const resp = Resp.internalError("Erro interno ao buscar departamentos.");
+      return res.status(resp.status).json(resp);
     }
   }
 }

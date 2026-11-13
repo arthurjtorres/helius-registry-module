@@ -1,4 +1,6 @@
 import { Request, Response, NextFunction } from "express";
+import { logError } from "../utils/logError";
+import Resp from "../utils/Response";
 import SectorService from "../services/SectorService";
 
 class SectorController {
@@ -14,8 +16,9 @@ class SectorController {
       const result = await this.service.createSector(data);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em createSector:", error);
-      return res.status(500).json("Erro interno ao criar setor.");
+      logError("Erro em createSector", error);
+      const resp = Resp.internalError("Erro interno ao criar setor.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -30,8 +33,9 @@ class SectorController {
       const result = await this.service.updateSector(id, data);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em updateSector:", error);
-      return res.status(500).json("Erro interno ao atualizar setor.");
+      logError("Erro em updateSector", error);
+      const resp = Resp.internalError("Erro interno ao atualizar setor.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -41,8 +45,9 @@ class SectorController {
       const result = await this.service.deleteSector(id, res.locals.user.userId);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em deleteSector:", error);
-      return res.status(500).json("Erro interno ao deletar setor.");
+      logError("Erro em deleteSector", error);
+      const resp = Resp.internalError("Erro interno ao deletar setor.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -53,8 +58,9 @@ class SectorController {
       const result = await this.service.reactivateSector(id, res.locals.user.userId);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em reactivateSector:", error);
-      return res.status(500).json("Erro interno ao reativar registro.");
+      logError("Erro em reactivateSector", error);
+      const resp = Resp.internalError("Erro interno ao reativar registro.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -64,8 +70,9 @@ class SectorController {
       const result = await this.service.getSector(id);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em getSector:", error);
-      return res.status(500).json("Erro interno ao buscar setor.");
+      logError("Erro em getSector", error);
+      const resp = Resp.internalError("Erro interno ao buscar setor.");
+      return res.status(resp.status).json(resp);
     }
   }
 
@@ -74,8 +81,9 @@ class SectorController {
       const result = await this.service.findSectors(req.query);
       return res.status(result.status).json(result);
     } catch (error) {
-      console.error("Erro em findSectors:", error);
-      return res.status(500).json("Erro interno ao buscar setores.");
+      logError("Erro em findSectors", error);
+      const resp = Resp.internalError("Erro interno ao buscar setores.");
+      return res.status(resp.status).json(resp);
     }
   }
 }
