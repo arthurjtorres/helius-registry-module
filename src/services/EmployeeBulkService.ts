@@ -9,6 +9,7 @@ import {
   validateEmployeeItems,
   ValidEmployeeItem,
 } from "../utils/EmployeeImport";
+import { logError } from "../utils/logError";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -210,7 +211,7 @@ class EmployeeBulkService {
         return { status: 409, message: "Conflito de unicidade durante a gravação (matrícula ou CPF cadastrados por outra requisição). Nenhum registro foi gravado; tente novamente." };
       }
       // Detalhe só no log do servidor, sem dados do lote
-      console.error("Erro na importação de funcionários:", error instanceof Error ? error.message : "desconhecido");
+      logError("importEmployees", error);
       return { status: 500, message: "Erro interno ao importar funcionários. Nenhum registro foi gravado." };
     }
   }
