@@ -1,6 +1,6 @@
 {
   "name": "registry-module",
-  "version": "0.0.1",
+  "version": "0.16.1-beta",
   "description": "Módulo de controle do sistema",
   "main": "src/server.ts",
   "repository": "https://github.com/NamelessMiojo/helius-registry-module.git",
