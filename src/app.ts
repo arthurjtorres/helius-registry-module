@@ -16,7 +16,10 @@ app.use(cors(buildCorsOptions(allowedOrigins)));
 // (inclusive para documentos), então o Cross-Origin-Resource-Policy padrão (same-origin) não o afeta.
 app.use(helmet());
 
-app.use(express.json({ limit: "1mb" })); // importação em lote (até 500 itens)
+// Importação de funcionários (até 5000 itens) precisa de corpo maior; registrado antes do global,
+// que não relê um corpo já processado. As demais rotas seguem com 1mb.
+app.use("/employee/bulk", express.json({ limit: "5mb" }));
+app.use(express.json({ limit: "1mb" }));
 
 app.use(router);
 app.get('/', (req, res) => res.status(200).send('Rodando cadastro aqui!'));

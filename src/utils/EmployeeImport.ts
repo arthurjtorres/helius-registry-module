@@ -1,7 +1,10 @@
 import { isValid, parse } from "date-fns";
 
-/** Máximo de funcionários por requisição de importação em lote (T09). */
-export const MAX_BULK_ITEMS = 500;
+/** Máximo de funcionários por requisição de importação em lote (a maior empresa tem ~5000; tudo ou nada). */
+export const MAX_BULK_ITEMS = 5000;
+
+/** Dígitos da matrícula sem a sigla: o RH exporta a chapa com zeros à esquerda (`001234`). */
+export const REGISTRATION_DIGITS = 6;
 
 /** Tamanho máximo de texto livre (as colunas são `VARCHAR(255)`). */
 export const MAX_TEXT_LENGTH = 255;
@@ -101,7 +104,9 @@ const text = (value: unknown): string | null =>
  * Monta a matrícula como é gravada: sigla da empresa + número (as matrículas são sequenciais
  * por empresa; a sigla as torna únicas no banco, ex.: `PS8598`). Aceita só o número (`8598`,
  * texto ou inteiro) ou o número já com a sigla da própria empresa, sem diferenciar caixa, com ou
- * sem hífen entre os dois (`PS-8598`, formato que a tela atual do front envia). Grava sem hífen.
+ * sem hífen entre os dois (`PS-8598`, formato que a tela atual do front envia). Grava sem hífen e
+ * completa o número com zeros à esquerda até `REGISTRATION_DIGITS` (`8598` e `008598` → `PS008598`),
+ * para a chapa do `.txt` do RH e a da planilha (o Excel perde os zeros) darem a mesma matrícula.
  * @param raw Matrícula recebida.
  * @param acronym Sigla da empresa da importação (`company.company_acronym`).
  * @returns A matrícula com a sigla em maiúsculas, ou `null` se o formato não bater.
@@ -112,7 +117,7 @@ export const buildRegistration = (raw: unknown, acronym: string): string | null 
     ? String(raw)
     : typeof raw === "string" ? raw.replace(/\s+/g, "").toUpperCase() : "";
   const number = value.startsWith(prefix) ? value.slice(prefix.length).replace(/^-/, "") : value;
-  return prefix && /^\d+$/.test(number) ? `${prefix}${number}` : null;
+  return prefix && /^\d+$/.test(number) ? `${prefix}${number.padStart(REGISTRATION_DIGITS, "0")}` : null;
 };
 
 /**
