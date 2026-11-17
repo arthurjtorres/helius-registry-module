@@ -48,7 +48,7 @@ describe('validateEmployeeItems', () => {
     const { valid, failed } = validateEmployeeItems([item()], 'PS');
     expect(failed).toEqual([]);
     expect(valid).toHaveLength(1);
-    expect(valid[0]).toMatchObject({ line: 1, registration: 'PS1001', cpf: '52998224725', positionKey: 'MOTORISTA', firstName: 'Maria', lastName: 'da Silva' });
+    expect(valid[0]).toMatchObject({ line: 1, registration: 'PS001001', cpf: '52998224725', positionKey: 'MOTORISTA', firstName: 'Maria', lastName: 'da Silva' });
   });
   it('CPF é opcional (ausente, nulo ou vazio)', () => {
     const { valid, failed } = validateEmployeeItems([item({ cpf: undefined }), item({ registration: '1002', cpf: null }), item({ registration: '1003', cpf: '' })], 'PS');
@@ -63,7 +63,7 @@ describe('validateEmployeeItems', () => {
     expect(valid).toHaveLength(1);
     const campos = failed.map(f => f.field).sort();
     expect(campos).toEqual(['admissionDate', 'birthDate', 'cpf', 'fullName', 'position']);
-    expect(failed.every(f => f.line === 2 && f.registration === 'PS1002' && f.code === 'INVALID')).toBe(true);
+    expect(failed.every(f => f.line === 2 && f.registration === 'PS001002' && f.code === 'INVALID')).toBe(true);
     expect(JSON.stringify(failed)).not.toMatch(/Madonna|123/);
   });
   it('matrícula e CPF repetidos no arquivo apontam a primeira linha', () => {
@@ -90,16 +90,21 @@ describe('tamanho máximo de texto', () => {
 
 describe('matrícula com a sigla da empresa', () => {
   it('acrescenta a sigla quando vem só o número (texto ou inteiro)', () => {
-    expect(buildRegistration('8598', 'PS')).toBe('PS8598');
-    expect(buildRegistration(' 8598 ', 'ps')).toBe('PS8598');
-    expect(buildRegistration(8598, 'PS')).toBe('PS8598');
+    expect(buildRegistration('8598', 'PS')).toBe('PS008598');
+    expect(buildRegistration(' 8598 ', 'ps')).toBe('PS008598');
+    expect(buildRegistration(8598, 'PS')).toBe('PS008598');
     expect(buildRegistration('008598', 'PS')).toBe('PS008598');
   });
   it('aceita a sigla da própria empresa, sem diferenciar caixa, com ou sem hífen (formato da tela atual)', () => {
-    expect(buildRegistration('PS8598', 'PS')).toBe('PS8598');
-    expect(buildRegistration('ps8598', 'PS')).toBe('PS8598');
-    expect(buildRegistration('PS-8598', 'PS')).toBe('PS8598');
-    expect(buildRegistration('ps - 8598', 'PS')).toBe('PS8598');
+    expect(buildRegistration('PS8598', 'PS')).toBe('PS008598');
+    expect(buildRegistration('ps8598', 'PS')).toBe('PS008598');
+    expect(buildRegistration('PS-8598', 'PS')).toBe('PS008598');
+    expect(buildRegistration('ps - 8598', 'PS')).toBe('PS008598');
+  });
+  it('completa o número com zeros até 6 dígitos (chapa do .txt e da planilha dão a mesma matrícula)', () => {
+    expect(buildRegistration('001234', 'PS')).toBe(buildRegistration(1234, 'PS'));
+    expect(buildRegistration('PS-1234', 'PS')).toBe('PS001234');
+    expect(buildRegistration('1234567', 'PS')).toBe('PS1234567');
   });
   it('hífen só vale entre a sigla e o número', () => {
     expect(buildRegistration('-8598', 'PS')).toBeNull();
@@ -116,9 +121,9 @@ describe('matrícula com a sigla da empresa', () => {
     expect(buildRegistration('8598', '')).toBeNull();
   });
   it('8598 e PS8598 no mesmo arquivo contam como matrícula repetida', () => {
-    const { valid, failed } = validateEmployeeItems([item({ cpf: undefined }), item({ registration: 'PS1001', cpf: undefined })], 'PS');
+    const { valid, failed } = validateEmployeeItems([item({ cpf: undefined }), item({ registration: 'PS001001', cpf: undefined })], 'PS');
     expect(valid).toHaveLength(1);
-    expect(failed[0]).toMatchObject({ line: 2, field: 'registration', registration: 'PS1001' });
+    expect(failed[0]).toMatchObject({ line: 2, field: 'registration', registration: 'PS001001' });
   });
   it('matrícula de outra empresa vira erro no item, citando a sigla esperada', () => {
     const { failed } = validateEmployeeItems([item({ registration: 'VR1596' })], 'PS');

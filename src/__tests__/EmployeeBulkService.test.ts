@@ -101,15 +101,15 @@ describe('EmployeeBulkService (tudo ou nada)', () => {
   });
 
   it('matrícula ativa já existente é ignorada (skipped); só os novos entram', async () => {
-    mocks.employeeFindAll.mockResolvedValue([{ employeeId: 'e-1', registration: 'PS1', activated: true }]);
+    mocks.employeeFindAll.mockResolvedValue([{ employeeId: 'e-1', registration: 'PS000001', activated: true }]);
     const r = await run([item('1'), item('2')]);
     expect(r.status).toBe(201);
-    expect(r.data?.skipped).toEqual([expect.objectContaining({ line: 1, registration: 'PS1', employeeId: 'e-1' })]);
+    expect(r.data?.skipped).toEqual([expect.objectContaining({ line: 1, registration: 'PS000001', employeeId: 'e-1' })]);
     expect(r.data?.created).toHaveLength(1);
   });
 
   it('todas já existentes → 200 sem gravar', async () => {
-    mocks.employeeFindAll.mockResolvedValue([{ employeeId: 'e-1', registration: 'PS1', activated: true }]);
+    mocks.employeeFindAll.mockResolvedValue([{ employeeId: 'e-1', registration: 'PS000001', activated: true }]);
     const r = await run([item('1')]);
     expect(r.status).toBe(200);
     expect(r.data?.skipped).toHaveLength(1);
@@ -117,7 +117,7 @@ describe('EmployeeBulkService (tudo ou nada)', () => {
   });
 
   it('matrícula existente inativa vira conflito com a rota de reativação', async () => {
-    mocks.employeeFindAll.mockResolvedValue([{ employeeId: 'e-9', registration: 'PS1', activated: false }]);
+    mocks.employeeFindAll.mockResolvedValue([{ employeeId: 'e-9', registration: 'PS000001', activated: false }]);
     const r = await run([item('1')]);
     expect(r.status).toBe(400);
     expect(r.data?.failed[0]).toMatchObject({ code: 'CONFLICT', field: 'registration' });

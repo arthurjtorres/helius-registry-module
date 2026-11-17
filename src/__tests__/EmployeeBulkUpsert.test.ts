@@ -44,7 +44,7 @@ const item = (registration: string, extra: Record<string, unknown> = {}) => ({
   registration, fullName: 'Maria da Silva', admissionDate: '01/02/2020', position: 'Motorista', birthDate: '15/06/1985', ...extra,
 });
 const stored = (over: Record<string, unknown> = {}) => ({
-  employeeId: 'e-1', registration: 'PS1', activated: true, fkCompanyId: companyId,
+  employeeId: 'e-1', registration: 'PS000001', activated: true, fkCompanyId: companyId,
   fkPositionId: 'p-mot', fkPersonId: 'pe-1', admissionDate: '2020-02-01', ...over,
 });
 
@@ -72,7 +72,7 @@ describe('EmployeeBulkService em modo upsert (T10)', () => {
   it('planilha igual ao cadastro: unchanged, nada gravado', async () => {
     const r = await run([item('1')]);
     expect(r.status).toBe(200);
-    expect(r.data).toMatchObject({ mode: 'upsert', unchanged: [{ line: 1, registration: 'PS1', employeeId: 'e-1' }], updated: [], skipped: [] });
+    expect(r.data).toMatchObject({ mode: 'upsert', unchanged: [{ line: 1, registration: 'PS000001', employeeId: 'e-1' }], updated: [], skipped: [] });
     expect(transaction.commit).not.toHaveBeenCalled();
   });
 
@@ -156,7 +156,7 @@ describe('EmployeeBulkService em modo upsert (T10)', () => {
   });
 
   it('duas matrículas da mesma pessoa com nomes diferentes: conflito na segunda', async () => {
-    mocks.employeeFindAll.mockResolvedValue([stored(), stored({ employeeId: 'e-2', registration: 'PS2' })]);
+    mocks.employeeFindAll.mockResolvedValue([stored(), stored({ employeeId: 'e-2', registration: 'PS000002' })]);
     const r = await run([item('1', { fullName: 'Maria Souza' }), item('2', { fullName: 'Maria Lima' })], { confirmIds: ['e-1', 'e-2'] });
     expect(r.status).toBe(400);
     expect(r.data?.failed).toEqual([expect.objectContaining({ line: 2, field: 'person' })]);
