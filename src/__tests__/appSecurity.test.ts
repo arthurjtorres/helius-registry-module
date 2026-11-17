@@ -6,6 +6,9 @@ jest.mock('../routes', () => {
   const { Router } = jest.requireActual('express');
   const router = Router();
   router.get('/ping', (_req: unknown, res: any) => res.json({ status: 200, message: 'ok' }));
+  const count = (req: any, res: any) => res.json({ status: 200, count: req.body.employees.length });
+  router.post('/employee/bulk', count);
+  router.post('/echo', count);
   return { __esModule: true, default: router };
 });
 
@@ -56,6 +59,15 @@ describe('app: CORS e helmet', () => {
     });
     expect(res.status).toBe(204);
     expect(res.headers.get('access-control-allow-origin')).toBe(ALLOWED);
+  });
+
+  it('corpo de 2mb: aceito só na importação de funcionários; as demais rotas seguem com 1mb (413)', async () => {
+    const body = JSON.stringify({ employees: Array.from({ length: 10000 }, () => ({ fullName: 'x'.repeat(190) })) });
+    const post = (path: string) => fetch(`${base}${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body });
+    const bulk = await post('/employee/bulk');
+    expect(bulk.status).toBe(200);
+    expect((await bulk.json()).count).toBe(10000);
+    expect((await post('/echo')).status).toBe(413);
   });
 
   it('origens registradas uma vez na subida, não por requisição', () => {
