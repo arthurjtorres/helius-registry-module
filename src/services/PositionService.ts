@@ -7,15 +7,41 @@ import UpdateValidationSchema from "./validations/UpdateValidationSchema";
 
 import { PositionModel } from "../database/models";
 import PositionInterface from "../database/interfaces/PositionInterface";
+import { normalizeText } from "../utils/EmployeeImport";
 
 class PositionService {
   private model: ModelStatic<PositionModel> = PositionModel;
+
+  /**
+   * Verifica se já existe outro cargo com o mesmo nome normalizado (sem acento, caixa ou espaços extras),
+   * que tornaria a importação de funcionários ambígua. Ativo tem prioridade; se só houver inativo, a
+   * resposta traz o id para reativação. O banco não tem unique no nome.
+   *
+   * @param name Nome informado.
+   * @param excludeId Cargo a ignorar (o próprio, no `PUT`).
+   * @returns Resposta de conflito (409) ou `null` se o nome estiver livre.
+   */
+  private async findNameConflict(name: string, excludeId?: string) {
+    const key = normalizeText(name);
+    // shortcut: compara em memória (tabela pequena); se os cargos passarem de alguns milhares, mover para o banco (unaccent)
+    const same = (await this.model.findAll({ attributes: ["positionId", "positionName", "activated"] }))
+      .filter(p => p.positionId !== excludeId && normalizeText(p.positionName) === key);
+    if (same.some(p => p.activated)) return Response.conflict("Já existe um cargo com este nome.");
+    if (same.length) {
+      const id = same[0].positionId;
+      return Response.conflict(`Já existe um cargo inativo com este nome (id: ${id}). Reative-o em PATCH /position/${id}/reactivate.`, { id });
+    }
+    return null;
+  }
 
   async createPosition(data: PositionInterface) {
     data.createdAt = new Date();
 
     const { error } = CreateValidationSchema.PositionValidation.validate(data);
     if (error) return Response.badRequest(error.message);
+
+    const conflict = await this.findNameConflict(data.positionName);
+    if (conflict) return conflict;
 
     await this.model.create({ ...data });
     return Response.created("Cargo criado com sucesso!");
@@ -28,6 +54,11 @@ class PositionService {
 
     const { error } = UpdateValidationSchema.PositionValidation.validate(data);
     if (error) return Response.badRequest(error.message);
+
+    if (data.positionName) {
+      const conflict = await this.findNameConflict(data.positionName, id);
+      if (conflict) return conflict;
+    }
 
     const [updated] = await this.model.update(data, { where: { positionId: id, activated: true } });
     if (!updated) return Response.notFound("Cargo não encontrado!");
