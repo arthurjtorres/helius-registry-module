@@ -8,6 +8,8 @@ class EmployeeModel extends Model {
   declare employeeId: string;
   declare registration: string;
   declare admissionDate: Date;
+  /** Data de rescisão, gravada na desativação (T20). */
+  declare terminationDate?: string | null;
   declare fkPersonId: string;
   declare fkCompanyId?: string;
   declare fkPositionId?: string;
@@ -34,6 +36,10 @@ EmployeeModel.init({
     unique: true,
   },
   admissionDate: {
+    type: sequelize.DATEONLY,
+    allowNull: true,
+  },
+  terminationDate: {
     type: sequelize.DATEONLY,
     allowNull: true,
   },

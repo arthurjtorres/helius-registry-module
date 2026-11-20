@@ -135,6 +135,16 @@ describe('EmployeeBulkService (tudo ou nada)', () => {
     expect(mocks.documentBulkCreate).toHaveBeenCalledWith([], expect.anything());
   });
 
+  it('CPF de pessoa com funcionário ativo (qualquer empresa) é conflito', async () => {
+    const personId = randomUUID();
+    mocks.documentFindAll.mockResolvedValue([{ documentNumber: '52998224725', documentType: 'CPF', fkPersonId: personId, activated: true }]);
+    mocks.personFindAll.mockResolvedValue([{ personId }]);
+    mocks.employeeFindAll.mockImplementation(async ({ where }) => (where.fkPersonId ? [{ fkPersonId: personId, Company: { companyName: 'Empresa Antiga' } }] : []));
+    const r = await run([item('1', { cpf: '52998224725' })]);
+    expect(r.status).toBe(400);
+    expect(r.data?.failed[0]).toMatchObject({ code: 'CONFLICT', field: 'cpf', error: 'Pessoa com vínculo ativo em Empresa Antiga; desative antes.' });
+  });
+
   it('CPF em documento inativo ou de outro tipo é conflito', async () => {
     mocks.documentFindAll.mockResolvedValue([{ documentNumber: '52998224725', documentType: 'CPF', fkPersonId: randomUUID(), activated: false }]);
     expect((await run([item('1', { cpf: '52998224725' })])).status).toBe(400);

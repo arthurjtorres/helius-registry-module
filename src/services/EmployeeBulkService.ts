@@ -12,6 +12,20 @@ import {
 import { compareEmployee, CurrentEmployee, FieldChange, isConflict } from "../utils/EmployeeUpsert";
 import { logError } from "../utils/logError";
 
+/** Mensagem da regra "uma pessoa, um vínculo ativo" (04 §6.2, regra 2). */
+export const activeEmploymentMessage = (companyName: string) => `Pessoa com vínculo ativo em ${companyName}; desative antes.`;
+
+/** Funcionário ativo de cada pessoa: pessoa → nome da empresa. */
+export const activeEmploymentByPerson = async (personIds: string[]): Promise<Map<string, string>> => {
+  if (!personIds.length) return new Map();
+  const rows = await EmployeeModel.findAll({
+    where: { fkPersonId: { [Op.in]: personIds }, activated: true },
+    attributes: ["fkPersonId"],
+    include: [{ model: CompanyModel, as: "Company", attributes: ["companyName"] }],
+  }) as Array<EmployeeModel & { Company?: { companyName: string } }>;
+  return new Map(rows.map(r => [r.fkPersonId, r.Company?.companyName ?? "outra empresa"]));
+};
+
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Funcionário que entraria (ou entrou) na importação. */
@@ -209,6 +223,7 @@ class EmployeeBulkService {
       ? await PersonModel.findAll({ where: { personId: { [Op.in]: reusablePersonIds }, activated: true }, attributes: ["personId"] })
       : [];
     const activePersonIds = new Set(activePersons.map(p => p.personId));
+    const employedPersons = await activeEmploymentByPerson([...activePersonIds]);
 
     const planned: PlannedItem[] = [];
     withPosition.forEach(item => {
@@ -220,6 +235,11 @@ class EmployeeBulkService {
             ? "Esse número já está cadastrado como outro tipo de documento."
             : "CPF já cadastrado em documento ou pessoa inativos; reative o cadastro antes de importar.",
         });
+        return;
+      }
+      const employedAt = doc ? employedPersons.get(doc.fkPersonId) : undefined;
+      if (employedAt) {
+        failed.push({ line: item.line, registration: item.registration, field: "cpf", code: "CONFLICT", error: activeEmploymentMessage(employedAt) });
         return;
       }
       planned.push({
