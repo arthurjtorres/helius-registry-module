@@ -8,9 +8,9 @@ import UpdateValidationSchema from "./validations/UpdateValidationSchema";
 import { EmployeeModel, PersonModel, CompanyModel, PositionModel, SectorModel, DepartmentModel, DocumentModel } from "../database/models";
 import EmployeeInterface from "../database/interfaces/EmployeeInterface";
 
-import EmployeeBulkService, { ImportOptions } from "./EmployeeBulkService";
+import EmployeeBulkService, { activeEmploymentByPerson, activeEmploymentMessage, ImportOptions } from "./EmployeeBulkService";
 import { buildRegistration } from "../utils/EmployeeImport";
-import { hasActiveUserForEmployee, ControlUnavailableError } from "./integrations/UserService";
+import { deactivateUsersByEmployee, ControlUnavailableError } from "./integrations/UserService";
 
 const INVALID_REGISTRATION = "Matrícula inválida: informe o número da chapa (ex.: 8598), com ou sem a sigla da empresa.";
 
@@ -51,6 +51,8 @@ class EmployeeService {
     if (built.error) return built.error;
     const conflict = await this.registrationConflict(built.registration);
     if (conflict) return conflict;
+    const employedAt = (await activeEmploymentByPerson([data.fkPersonId])).get(data.fkPersonId);
+    if (employedAt) return Response.conflict(activeEmploymentMessage(employedAt));
 
     await this.model.create({ ...data, registration: built.registration });
     return Response.created("Funcionário criado com sucesso!");
@@ -102,42 +104,58 @@ class EmployeeService {
   }
 
   /**
-   * Desativa o registro (exclusão lógica): `activated = false`.
-   * @param id Identificador do registro.
+   * Demissão (T20, `04` §6.2): grava a rescisão, desativa o funcionário e pede ao `control`
+   * que desative os usuários dele. Sem atomicidade entre módulos: se o `control` falhar,
+   * o funcionário continua desativado e a resposta lista o pendente (o login já o recusa).
+   * @param id Funcionário.
    * @param updatedBy Usuário autenticado que executa a operação.
-   * @param authorization Header `Authorization` original, repassado ao `control`.
-   * @returns 409 se houver usuário ativo no `control`; 503 se o `control` não puder ser consultado.
+   * @param terminationDate Data de rescisão `AAAA-MM-DD` (padrão: hoje); não pode ser anterior à admissão.
+   * @returns 200 com `{ deactivatedUsers, pendingEmployeeIds }`; 400 data inválida; 404 inexistente ou inativo.
    */
-  async deleteEmployee(id: string, updatedBy: string, authorization: string) {
+  async deleteEmployee(id: string, updatedBy: string, terminationDate?: string) {
     if (!id) return Response.badRequest("ID não informado");
+    const date = terminationDate ?? new Date().toISOString().slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || joi.date().iso().validate(date).error) {
+      return Response.badRequest("Data de rescisão inválida: use AAAA-MM-DD.");
+    }
 
-    try {
-      if (await hasActiveUserForEmployee(id, authorization)) {
-        return Response.conflict("Não é possível desativar: o funcionário possui usuário ativo.");
-      }
-    } catch (error) {
-      if (error instanceof ControlUnavailableError) {
-        return Response.unavailable("Não foi possível verificar usuários do funcionário. Tente novamente.");
-      }
-      throw error;
+    const current = await this.model.findOne({ where: { employeeId: id, activated: true }, attributes: ["employeeId", "admissionDate"] });
+    if (!current) return Response.notFound("Funcionário não encontrado!");
+    if (current.admissionDate && date < String(current.admissionDate).slice(0, 10)) {
+      return Response.badRequest("A data de rescisão não pode ser anterior à admissão.");
     }
 
     const [updated] = await this.model.update(
-      { activated: false, updatedBy, updatedAt: new Date() },
+      { activated: false, terminationDate: date, updatedBy, updatedAt: new Date() },
       { where: { employeeId: id, activated: true } }
     );
     if (!updated) return Response.notFound("Funcionário não encontrado!");
 
-    return Response.ok("Funcionário desativado com sucesso!");
+    try {
+      const deactivatedUsers = await deactivateUsersByEmployee([id], updatedBy);
+      return Response.ok("Funcionário desligado com sucesso!", { deactivatedUsers, pendingEmployeeIds: [] as string[] });
+    } catch (error) {
+      if (!(error instanceof ControlUnavailableError)) throw error;
+      return Response.ok(
+        "Funcionário desligado, mas o usuário dele não foi desativado (módulo de controle indisponível). Desative o usuário manualmente.",
+        { deactivatedUsers: [] as string[], pendingEmployeeIds: [id] }
+      );
+    }
   }
 
   /**
-   * Reativa um registro desativado (`activated = true`).
+   * Reativa um registro desativado (`activated = true`). Recusa (409) se a pessoa já tem
+   * outro funcionário ativo (`04` §6.2, regra 2).
    * @param id Identificador do registro.
    * @param updatedBy Usuário autenticado que executa a operação.
    */
   async reactivateEmployee(id: string, updatedBy: string) {
     if (!id) return Response.badRequest("ID não informado");
+
+    const target = await this.model.findOne({ where: { employeeId: id, activated: false }, attributes: ["employeeId", "fkPersonId"] });
+    if (!target) return Response.notFound("Funcionário não encontrado ou já ativo!");
+    const employedAt = (await activeEmploymentByPerson([target.fkPersonId])).get(target.fkPersonId);
+    if (employedAt) return Response.conflict(activeEmploymentMessage(employedAt));
 
     const [updated] = await this.model.update(
       { activated: true, updatedBy, updatedAt: new Date() },
