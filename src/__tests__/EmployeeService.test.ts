@@ -126,6 +126,17 @@ describe('vínculo ativo da pessoa (04 §6.2, regra 2)', () => {
     expect(mocks.employeeCreate).not.toHaveBeenCalled();
   });
 
+  it('conta só vínculo no grupo da empresa (mesma ou outra do grupo); sem grupo, só a própria empresa', async () => {
+    mocks.companyFindOne.mockResolvedValue({ companyId, companyAcronym: 'PS', fkCompanyGroupId: 'g-1' });
+    await service.createEmployee(createData({ fkPersonId: personId }));
+    expect(mocks.employeeFindAll.mock.calls[0][0].include[0]).toMatchObject({ where: { fkCompanyGroupId: 'g-1' }, required: true });
+
+    mocks.employeeFindAll.mockClear();
+    mocks.companyFindOne.mockResolvedValue({ companyId, companyAcronym: 'PS', fkCompanyGroupId: null });
+    await service.createEmployee(createData({ fkPersonId: personId }));
+    expect(mocks.employeeFindAll.mock.calls[0][0].include[0]).toMatchObject({ where: { companyId }, required: true });
+  });
+
   it('reactivateEmployee recusa se a pessoa já tem outro funcionário ativo', async () => {
     mocks.employeeFindOne.mockResolvedValue({ employeeId, fkPersonId: personId, activated: false });
     mocks.employeeFindAll.mockResolvedValue(active);
@@ -148,11 +159,22 @@ describe('deleteEmployee (demissão, T20)', () => {
     expect(mockDeactivateUsers).toHaveBeenCalledWith([employeeId], userId);
   });
 
-  it('sem data, usa hoje', async () => {
-    mockDeactivateUsers.mockResolvedValue([]);
-    await service.deleteEmployee(employeeId, userId);
-    const today = new Date().toISOString().slice(0, 10);
-    expect(mocks.employeeUpdate.mock.calls[0][0].terminationDate).toBe(today);
+  describe('com relógio em 2026-11-20 23:30 de Brasília (02:30 UTC do dia 21)', () => {
+    beforeEach(() => jest.useFakeTimers({ now: new Date('2026-11-21T02:30:00Z'), doNotFake: ['nextTick', 'setImmediate'] }));
+    afterEach(() => jest.useRealTimers());
+
+    it('sem data, usa hoje em Brasília, não em UTC', async () => {
+      mockDeactivateUsers.mockResolvedValue([]);
+      await service.deleteEmployee(employeeId, userId);
+      expect(mocks.employeeUpdate.mock.calls[0][0].terminationDate).toBe('2026-11-20');
+    });
+
+    it('aceita até amanhã; depois disso → 400, sem gravar', async () => {
+      mockDeactivateUsers.mockResolvedValue([]);
+      expect((await service.deleteEmployee(employeeId, userId, '2026-11-22')).status).toBe(400);
+      expect(mocks.employeeUpdate).not.toHaveBeenCalled();
+      expect((await service.deleteEmployee(employeeId, userId, '2026-11-21')).status).toBe(200);
+    });
   });
 
   it('control fora: funcionário fica desativado e a resposta lista o pendente', async () => {

@@ -108,7 +108,8 @@ describe('EmployeeBulkService em modo upsert (T10)', () => {
   });
 
   it('inativo sem reactivate é conflito; com reactivate e confirmação, reativa', async () => {
-    mocks.employeeFindAll.mockResolvedValue([stored({ activated: false })]);
+    // sem vínculo ativo da pessoa no grupo
+    mocks.employeeFindAll.mockImplementation(async ({ where }: Where) => ('fkPersonId' in (where ?? {}) ? [] : [stored({ activated: false })]));
     const sem = await run([item('1')]);
     expect(sem.status).toBe(400);
     expect(sem.data?.failed[0].error).toContain('reactivate=true');
@@ -162,3 +163,16 @@ describe('EmployeeBulkService em modo upsert (T10)', () => {
     expect(r.data?.failed).toEqual([expect.objectContaining({ line: 2, field: 'person' })]);
   });
 });
+
+describe('reactivate=true e vínculo ativo no grupo (04 §6.2, regra 2)', () => {
+  it('pessoa com outro funcionário ativo no grupo: conflito, não reativa', async () => {
+    mocks.employeeFindAll.mockImplementation(async ({ where }: Where) => ('fkPersonId' in (where ?? {})
+      ? [{ fkPersonId: 'pe-1', Company: { companyName: 'Empresa Irmã' } }]
+      : [stored({ activated: false })]));
+    const r = await run([item('1')], { reactivate: true, confirmIds: ['e-1'] });
+    expect(r.status).toBe(400);
+    expect(r.data?.failed[0]).toMatchObject({ field: 'cpf', code: 'CONFLICT', error: 'Pessoa com vínculo ativo em Empresa Irmã; desative antes.' });
+    expect(mocks.employeeUpdate).not.toHaveBeenCalled();
+  });
+});
+
