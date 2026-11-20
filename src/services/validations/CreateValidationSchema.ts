@@ -89,9 +89,9 @@ const DocumentValidation = joi.object({
 
 const EmployeeValidation = joi.object({
   registration: joi.string().required(),
-  admissionDate: joi.date().optional(),
+  admissionDate: joi.date().required(),
   fkPersonId: joi.string().uuid().required(),
-  fkCompanyId: joi.string().uuid().optional(),
+  fkCompanyId: joi.string().uuid().required(),
   fkPositionId: joi.string().uuid().optional(),
   fkSectorId: joi.string().uuid().optional(),
   fkDepartmentId: joi.string().uuid().optional(),
