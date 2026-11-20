@@ -15,13 +15,18 @@ import { logError } from "../utils/logError";
 /** Mensagem da regra "uma pessoa, um vínculo ativo" (04 §6.2, regra 2). */
 export const activeEmploymentMessage = (companyName: string) => `Pessoa com vínculo ativo em ${companyName}; desative antes.`;
 
-/** Funcionário ativo de cada pessoa: pessoa → nome da empresa. */
-export const activeEmploymentByPerson = async (personIds: string[]): Promise<Map<string, string>> => {
+/**
+ * Funcionário ativo de cada pessoa no grupo da empresa (a mesma ou outra do grupo; sem grupo, só a
+ * própria empresa): pessoa → nome da empresa. Vínculo em outro grupo não conta nem aparece (04 §6.2).
+ */
+export const activeEmploymentByPerson = async (personIds: string[], companyId: string): Promise<Map<string, string>> => {
   if (!personIds.length) return new Map();
+  const company = await CompanyModel.findOne({ where: { companyId }, attributes: ["fkCompanyGroupId"] });
+  const sameGroup = company?.fkCompanyGroupId ? { fkCompanyGroupId: company.fkCompanyGroupId } : { companyId };
   const rows = await EmployeeModel.findAll({
     where: { fkPersonId: { [Op.in]: personIds }, activated: true },
     attributes: ["fkPersonId"],
-    include: [{ model: CompanyModel, as: "Company", attributes: ["companyName"] }],
+    include: [{ model: CompanyModel, as: "Company", attributes: ["companyName"], where: sameGroup, required: true }],
   }) as Array<EmployeeModel & { Company?: { companyName: string } }>;
   return new Map(rows.map(r => [r.fkPersonId, r.Company?.companyName ?? "outra empresa"]));
 };
@@ -223,7 +228,7 @@ class EmployeeBulkService {
       ? await PersonModel.findAll({ where: { personId: { [Op.in]: reusablePersonIds }, activated: true }, attributes: ["personId"] })
       : [];
     const activePersonIds = new Set(activePersons.map(p => p.personId));
-    const employedPersons = await activeEmploymentByPerson([...activePersonIds]);
+    const employedPersons = await activeEmploymentByPerson([...activePersonIds], companyId);
 
     const planned: PlannedItem[] = [];
     withPosition.forEach(item => {
@@ -346,6 +351,8 @@ class EmployeeBulkService {
     const personById = new Map(persons.map(p => [p.personId, p]));
     const cpfByPerson = new Map(cpfDocs.map(d => [d.fkPersonId, d.documentNumber]));
     const positionName = new Map(currentPositions.map(p => [p.positionId, p.positionName]));
+    // Reativação (reactivate=true) segue a regra do vínculo ativo no grupo, como o PATCH /reactivate
+    const employedPersons = await activeEmploymentByPerson([...new Set(employees.filter(e => !e.activated).map(e => e.fkPersonId))], companyId);
     // Mesma pessoa em dois itens (duas matrículas) não pode receber dados diferentes
     const personTouched = new Map<string, string>();
 
@@ -354,6 +361,8 @@ class EmployeeBulkService {
       const base = { line: item.line, registration: item.registration, employeeId: employee.employeeId };
       const conflictWith = (field: string, error: string) =>
         failed.push({ line: item.line, registration: item.registration, field, code: "CONFLICT", error });
+      const employedAt = employee.activated ? undefined : employedPersons.get(employee.fkPersonId);
+      if (employedAt) return void conflictWith("cpf", activeEmploymentMessage(employedAt));
       const result = compareEmployee({
         item, positionId: item.positionId, companyId, employee,
         person: personById.get(employee.fkPersonId) ?? null,

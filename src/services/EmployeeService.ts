@@ -51,7 +51,7 @@ class EmployeeService {
     if (built.error) return built.error;
     const conflict = await this.registrationConflict(built.registration);
     if (conflict) return conflict;
-    const employedAt = (await activeEmploymentByPerson([data.fkPersonId])).get(data.fkPersonId);
+    const employedAt = (await activeEmploymentByPerson([data.fkPersonId], data.fkCompanyId as string)).get(data.fkPersonId);
     if (employedAt) return Response.conflict(activeEmploymentMessage(employedAt));
 
     await this.model.create({ ...data, registration: built.registration });
@@ -109,15 +109,19 @@ class EmployeeService {
    * o funcionário continua desativado e a resposta lista o pendente (o login já o recusa).
    * @param id Funcionário.
    * @param updatedBy Usuário autenticado que executa a operação.
-   * @param terminationDate Data de rescisão `AAAA-MM-DD` (padrão: hoje); não pode ser anterior à admissão.
+   * @param terminationDate Data de rescisão `AAAA-MM-DD` (padrão: hoje em Brasília); entre a admissão e amanhã.
    * @returns 200 com `{ deactivatedUsers, pendingEmployeeIds }`; 400 data inválida; 404 inexistente ou inativo.
    */
   async deleteEmployee(id: string, updatedBy: string, terminationDate?: string) {
     if (!id) return Response.badRequest("ID não informado");
-    const date = terminationDate ?? new Date().toISOString().slice(0, 10);
+    // "Hoje" em Brasília, independente do fuso do servidor (em UTC, após 21h `toISOString` já é amanhã)
+    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
+    const tomorrow = new Date(Date.parse(today) + 86_400_000).toISOString().slice(0, 10);
+    const date = terminationDate ?? today;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || joi.date().iso().validate(date).error) {
       return Response.badRequest("Data de rescisão inválida: use AAAA-MM-DD.");
     }
+    if (date > tomorrow) return Response.badRequest("A data de rescisão não pode passar de amanhã.");
 
     const current = await this.model.findOne({ where: { employeeId: id, activated: true }, attributes: ["employeeId", "admissionDate"] });
     if (!current) return Response.notFound("Funcionário não encontrado!");
@@ -152,9 +156,9 @@ class EmployeeService {
   async reactivateEmployee(id: string, updatedBy: string) {
     if (!id) return Response.badRequest("ID não informado");
 
-    const target = await this.model.findOne({ where: { employeeId: id, activated: false }, attributes: ["employeeId", "fkPersonId"] });
+    const target = await this.model.findOne({ where: { employeeId: id, activated: false }, attributes: ["employeeId", "fkPersonId", "fkCompanyId"] });
     if (!target) return Response.notFound("Funcionário não encontrado ou já ativo!");
-    const employedAt = (await activeEmploymentByPerson([target.fkPersonId])).get(target.fkPersonId);
+    const employedAt = (await activeEmploymentByPerson([target.fkPersonId], target.fkCompanyId as string)).get(target.fkPersonId);
     if (employedAt) return Response.conflict(activeEmploymentMessage(employedAt));
 
     const [updated] = await this.model.update(
