@@ -1,4 +1,5 @@
 import { ModelStatic, Op } from "sequelize";
+import joi from "joi";
 
 import Response from "../utils/Response";
 import CreateValidationSchema from "./validations/CreateValidationSchema";
@@ -8,10 +9,37 @@ import { EmployeeModel, PersonModel, CompanyModel, PositionModel, SectorModel, D
 import EmployeeInterface from "../database/interfaces/EmployeeInterface";
 
 import EmployeeBulkService, { ImportOptions } from "./EmployeeBulkService";
+import { buildRegistration } from "../utils/EmployeeImport";
 import { hasActiveUserForEmployee, ControlUnavailableError } from "./integrations/UserService";
+
+const INVALID_REGISTRATION = "Matrícula inválida: informe o número da chapa (ex.: 8598), com ou sem a sigla da empresa.";
 
 class EmployeeService {
   private model: ModelStatic<EmployeeModel> = EmployeeModel;
+
+  /**
+   * Monta a matrícula no formato da importação (sigla da empresa + 6 dígitos, T16).
+   * @returns A matrícula, ou a resposta de erro (empresa inexistente/inativa ou formato inválido).
+   */
+  private async registrationFor(raw: unknown, companyId: string | undefined) {
+    const company = companyId
+      ? await CompanyModel.findOne({ where: { companyId, activated: true }, attributes: ["companyId", "companyAcronym"] })
+      : null;
+    if (!company) return { error: Response.badRequest("Empresa não encontrada ou inativa.") };
+    const registration = buildRegistration(raw, company.companyAcronym);
+    return registration ? { registration } : { error: Response.badRequest(INVALID_REGISTRATION) };
+  }
+
+  /** 409 se a matrícula já pertence a outro funcionário (ativo ou inativo); `null` se está livre. */
+  private async registrationConflict(registration: string, exceptId?: string) {
+    const existing = await this.model.findOne({ where: { registration } });
+    if (!existing || existing.employeeId === exceptId) return null;
+    return Response.conflict(
+      existing.activated
+        ? "Matrícula já cadastrado(a)."
+        : `Matrícula já existe como registro inativo (id: ${existing.employeeId}). Reative-o em PATCH /employee/${existing.employeeId}/reactivate.`
+    );
+  }
 
   async createEmployee(data: EmployeeInterface) {
     data.createdAt = new Date();
@@ -19,19 +47,19 @@ class EmployeeService {
     const { error } = CreateValidationSchema.EmployeeValidation.validate(data);
     if (error) return Response.badRequest(error.message);
 
-    const existing = await this.model.findOne({ where: { registration: data.registration } });
-    if (existing) {
-      return Response.conflict(
-        existing.activated
-          ? "Matrícula já cadastrado(a)."
-          : `Matrícula já existe como registro inativo (id: ${existing.employeeId}). Reative-o em PATCH /employee/${existing.employeeId}/reactivate.`
-      );
-    }
+    const built = await this.registrationFor(data.registration, data.fkCompanyId);
+    if (built.error) return built.error;
+    const conflict = await this.registrationConflict(built.registration);
+    if (conflict) return conflict;
 
-    await this.model.create({ ...data });
+    await this.model.create({ ...data, registration: built.registration });
     return Response.created("Funcionário criado com sucesso!");
   }
 
+  /**
+   * Atualiza o funcionário. A empresa não muda pela edição (troca de empresa é demissão e
+   * recontratação, T16/T20); a matrícula informada é remontada com a sigla da empresa atual.
+   */
   async updateEmployee(id: string, data: Partial<EmployeeInterface>) {
 
     if (!id) return Response.badRequest("ID não informado");
@@ -39,6 +67,21 @@ class EmployeeService {
 
     const { error } = UpdateValidationSchema.EmployeeValidation.validate(data);
     if (error) return Response.badRequest(error.message);
+
+    const current = await this.model.findOne({ where: { employeeId: id, activated: true } });
+    if (!current) return Response.notFound("Funcionário não encontrado!");
+
+    if (data.fkCompanyId && data.fkCompanyId !== current.fkCompanyId) {
+      return Response.badRequest("A empresa do funcionário não muda pela edição: troca de empresa é demissão e recontratação.");
+    }
+
+    if (data.registration !== undefined) {
+      const built = await this.registrationFor(data.registration, current.fkCompanyId);
+      if (built.error) return built.error;
+      const conflict = await this.registrationConflict(built.registration, id);
+      if (conflict) return conflict;
+      data.registration = built.registration;
+    }
 
     const [updated] = await this.model.update(data, { where: { employeeId: id, activated: true } });
 
@@ -124,6 +167,10 @@ class EmployeeService {
   }
 
   async findEmployees(query: Partial<EmployeeInterface>) {
+    const { error } = joi.object({ fkPersonId: joi.string().uuid(), fkCompanyId: joi.string().uuid() })
+      .unknown(true).validate(query);
+    if (error) return Response.badRequest(error.message);
+
     const where: any = { activated: true };
 
     if (query.registration) {
@@ -131,7 +178,11 @@ class EmployeeService {
     }
 
     if (query.fkPersonId) {
-      where.fkEmployeePersonId = query.fkPersonId;
+      where.fkPersonId = query.fkPersonId;
+    }
+
+    if (query.fkCompanyId) {
+      where.fkCompanyId = query.fkCompanyId;
     }
 
     const result = await this.model.findAll({
