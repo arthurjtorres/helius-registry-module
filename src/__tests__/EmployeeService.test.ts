@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 
+const mockTx = { commit: jest.fn(), rollback: jest.fn() };
 const mocks = {
   companyFindOne: jest.fn(),
   employeeFindOne: jest.fn(),
@@ -10,6 +11,7 @@ const mocks = {
 
 jest.mock('../database/models', () => ({
   __esModule: true,
+  default: { transaction: jest.fn(async () => mockTx) },
   CompanyModel: { findOne: (...a: unknown[]) => mocks.companyFindOne(...a) },
   EmployeeModel: {
     findOne: (...a: unknown[]) => mocks.employeeFindOne(...a),
@@ -43,6 +45,8 @@ beforeEach(() => {
   mocks.employeeUpdate.mockResolvedValue([1]);
   mocks.employeeFindAll.mockResolvedValue([]);
   mockDeactivateUsers.mockReset();
+  mockTx.commit.mockReset();
+  mockTx.rollback.mockReset();
 });
 
 describe('createEmployee', () => {
@@ -196,5 +200,60 @@ describe('deleteEmployee (demissão, T20)', () => {
     mocks.employeeFindOne.mockResolvedValue(null);
     expect((await service.deleteEmployee(employeeId, userId)).status).toBe(404);
     expect(mockDeactivateUsers).not.toHaveBeenCalled();
+  });
+});
+
+describe('bulkDeactivate (demissão em lote, T19)', () => {
+  const ids = [randomUUID(), randomUUID()];
+  const rows = (admissionDate = '2020-02-01') => ids.map(employeeId => ({ employeeId, admissionDate }));
+
+  it('desliga todos numa transação com a data informada e desativa os usuários no control', async () => {
+    mocks.employeeFindAll.mockResolvedValue(rows());
+    mockDeactivateUsers.mockResolvedValue(['u-1']);
+    const res = await service.bulkDeactivate(ids, userId, '2026-11-19');
+    expect(res.status).toBe(200);
+    expect((res as { data?: unknown }).data).toEqual({ deactivated: 2, deactivatedUsers: ['u-1'], pendingEmployeeIds: [] });
+    const [values, opts] = mocks.employeeUpdate.mock.calls[0];
+    expect(values).toMatchObject({ activated: false, terminationDate: '2026-11-19', updatedBy: userId });
+    expect(opts.transaction).toBe(mockTx);
+    expect(mockTx.commit).toHaveBeenCalled();
+    expect(mockDeactivateUsers).toHaveBeenCalledWith(ids, userId);
+  });
+
+  it('id inexistente ou inativo: 409 com os ids, nada gravado nem enviado ao control', async () => {
+    mocks.employeeFindAll.mockResolvedValue(rows().slice(0, 1));
+    const res = await service.bulkDeactivate(ids, userId, '2026-11-19');
+    expect(res.status).toBe(409);
+    expect((res as { data?: unknown }).data).toEqual({ ids: [ids[1]] });
+    expect(mocks.employeeUpdate).not.toHaveBeenCalled();
+    expect(mockTx.rollback).toHaveBeenCalled();
+    expect(mockDeactivateUsers).not.toHaveBeenCalled();
+  });
+
+  it('data anterior à admissão de algum: 400 com os ids, nada gravado', async () => {
+    mocks.employeeFindAll.mockResolvedValue([{ employeeId: ids[0], admissionDate: '2020-02-01' }, { employeeId: ids[1], admissionDate: '2026-11-20' }]);
+    const res = await service.bulkDeactivate(ids, userId, '2026-11-19');
+    expect(res.status).toBe(400);
+    expect((res as { data?: unknown }).data).toEqual({ ids: [ids[1]] });
+    expect(mocks.employeeUpdate).not.toHaveBeenCalled();
+    expect(mockTx.rollback).toHaveBeenCalled();
+  });
+
+  it('control fora: funcionários ficam desligados e todos vão em pendingEmployeeIds', async () => {
+    mocks.employeeFindAll.mockResolvedValue(rows());
+    mockDeactivateUsers.mockRejectedValue(new ControlUnavailableError('x'));
+    const res = await service.bulkDeactivate(ids, userId, '2026-11-19');
+    expect(res.status).toBe(200);
+    expect((res as { data?: unknown }).data).toEqual({ deactivated: 2, deactivatedUsers: [], pendingEmployeeIds: ids });
+    expect(mockTx.commit).toHaveBeenCalled();
+  });
+
+  it('entrada inválida → 400 sem abrir transação: ids vazios, id inválido, mais de 5000, data inválida ou além de amanhã', async () => {
+    expect((await service.bulkDeactivate([], userId)).status).toBe(400);
+    expect((await service.bulkDeactivate(['x'], userId)).status).toBe(400);
+    expect((await service.bulkDeactivate(Array.from({ length: 5001 }, () => randomUUID()), userId)).status).toBe(400);
+    expect((await service.bulkDeactivate(ids, userId, '19/11/2026')).status).toBe(400);
+    expect((await service.bulkDeactivate(ids, userId, '2999-01-01')).status).toBe(400);
+    expect(mocks.employeeFindAll).not.toHaveBeenCalled();
   });
 });

@@ -53,6 +53,18 @@ class EmployeeController {
     }
   }
 
+  /** POST /bulk-deactivate — demissão em lote `{ ids, terminationDate? }`, tudo ou nada (T19). */
+  async bulkDeactivate(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await this.service.bulkDeactivate(req.body?.ids, res.locals.user.userId, req.body?.terminationDate);
+      return res.status(result.status).json(result);
+    } catch (error) {
+      logError("Erro em bulkDeactivate", error);
+      const resp = Resp.internalError("Erro interno ao desligar funcionários.");
+      return res.status(resp.status).json(resp);
+    }
+  }
+
   /** PATCH /:id/reactivate — reativa o registro (`activated = true`). */
   async reactivateEmployee(req: Request, res: Response, next: NextFunction) {
     try {
