@@ -5,12 +5,32 @@ import Response from "../utils/Response";
 import CreateValidationSchema from "./validations/CreateValidationSchema";
 import UpdateValidationSchema from "./validations/UpdateValidationSchema";
 
-import { EmployeeModel, PersonModel, CompanyModel, PositionModel, SectorModel, DepartmentModel, DocumentModel } from "../database/models";
+import db, { EmployeeModel, PersonModel, CompanyModel, PositionModel, SectorModel, DepartmentModel, DocumentModel } from "../database/models";
 import EmployeeInterface from "../database/interfaces/EmployeeInterface";
 
 import EmployeeBulkService, { activeEmploymentByPerson, activeEmploymentMessage, ImportOptions } from "./EmployeeBulkService";
 import { buildRegistration } from "../utils/EmployeeImport";
+import { parseIdList } from "../utils/IdList";
 import { deactivateUsersByEmployee, ControlUnavailableError } from "./integrations/UserService";
+
+/** Máximo de funcionários por desligamento em lote, igual à importação e à rota do `control`. */
+export const MAX_DEACTIVATE_IDS = 5000;
+
+/**
+ * Data de rescisão (T20): `AAAA-MM-DD`, no máximo amanhã; sem valor, hoje em Brasília, independente
+ * do fuso do servidor (em UTC, após 21h `toISOString` já é amanhã).
+ */
+const parseTerminationDate = (value?: string): { date: string } | { error: string } => {
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
+  const tomorrow = new Date(Date.parse(today) + 86_400_000).toISOString().slice(0, 10);
+  const date = value ?? today;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || joi.date().iso().validate(date).error) return { error: "Data de rescisão inválida: use AAAA-MM-DD." };
+  if (date > tomorrow) return { error: "A data de rescisão não pode passar de amanhã." };
+  return { date };
+};
+
+/** Admissão até a data de rescisão (ou sem admissão). */
+const admittedBy = (admissionDate: unknown, date: string) => !admissionDate || date >= String(admissionDate).slice(0, 10);
 
 const INVALID_REGISTRATION = "Matrícula inválida: informe o número da chapa (ex.: 8598), com ou sem a sigla da empresa.";
 
@@ -114,18 +134,13 @@ class EmployeeService {
    */
   async deleteEmployee(id: string, updatedBy: string, terminationDate?: string) {
     if (!id) return Response.badRequest("ID não informado");
-    // "Hoje" em Brasília, independente do fuso do servidor (em UTC, após 21h `toISOString` já é amanhã)
-    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
-    const tomorrow = new Date(Date.parse(today) + 86_400_000).toISOString().slice(0, 10);
-    const date = terminationDate ?? today;
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || joi.date().iso().validate(date).error) {
-      return Response.badRequest("Data de rescisão inválida: use AAAA-MM-DD.");
-    }
-    if (date > tomorrow) return Response.badRequest("A data de rescisão não pode passar de amanhã.");
+    const parsed = parseTerminationDate(terminationDate);
+    if ("error" in parsed) return Response.badRequest(parsed.error);
+    const { date } = parsed;
 
     const current = await this.model.findOne({ where: { employeeId: id, activated: true }, attributes: ["employeeId", "admissionDate"] });
     if (!current) return Response.notFound("Funcionário não encontrado!");
-    if (current.admissionDate && date < String(current.admissionDate).slice(0, 10)) {
+    if (!admittedBy(current.admissionDate, date)) {
       return Response.badRequest("A data de rescisão não pode ser anterior à admissão.");
     }
 
@@ -135,15 +150,66 @@ class EmployeeService {
     );
     if (!updated) return Response.notFound("Funcionário não encontrado!");
 
+    return this.deactivateUsers([id], updatedBy, {
+      ok: "Funcionário desligado com sucesso!",
+      pending: "Funcionário desligado, mas o usuário dele não foi desativado (módulo de controle indisponível). Desative o usuário manualmente.",
+    });
+  }
+
+  /**
+   * Demissão em lote (T19, lista "fora da planilha"): tudo ou nada, numa transação. Mesma regra de
+   * data do desligamento avulso; depois do commit, pede ao `control` que desative os usuários.
+   * @param ids Funcionários (1–5000).
+   * @param updatedBy Usuário autenticado que executa a operação.
+   * @param terminationDate Data de rescisão `AAAA-MM-DD` para todos (padrão: hoje em Brasília).
+   * @returns 200 com `{ deactivated, deactivatedUsers, pendingEmployeeIds }`; 409 `{ ids }` inexistentes ou
+   *   inativos; 400 `{ ids }` com admissão posterior à data, ou entrada inválida. Nos erros, nada é gravado.
+   */
+  async bulkDeactivate(ids: unknown, updatedBy: string, terminationDate?: unknown) {
+    const parsedIds = parseIdList(ids, MAX_DEACTIVATE_IDS);
+    if ("error" in parsedIds) return Response.badRequest(parsedIds.error);
+    const parsedDate = parseTerminationDate(terminationDate == null ? undefined : String(terminationDate));
+    if ("error" in parsedDate) return Response.badRequest(parsedDate.error);
+    const { date } = parsedDate;
+
+    const transaction = await db.transaction();
     try {
-      const deactivatedUsers = await deactivateUsersByEmployee([id], updatedBy);
-      return Response.ok("Funcionário desligado com sucesso!", { deactivatedUsers, pendingEmployeeIds: [] as string[] });
+      const where = { employeeId: { [Op.in]: parsedIds.ids }, activated: true };
+      const found = await this.model.findAll({ where, attributes: ["employeeId", "admissionDate"], lock: true, transaction });
+      const foundIds = new Set(found.map(e => e.employeeId));
+      const missing = parsedIds.ids.filter(id => !foundIds.has(id));
+      if (missing.length) {
+        await transaction.rollback();
+        return Response.conflict(`Nada foi desligado: ${missing.length} funcionário(s) não encontrado(s) ou já inativo(s).`, { ids: missing });
+      }
+      const early = found.filter(e => !admittedBy(e.admissionDate, date)).map(e => e.employeeId);
+      if (early.length) {
+        await transaction.rollback();
+        return { ...Response.badRequest(`Nada foi desligado: a data de rescisão é anterior à admissão de ${early.length} funcionário(s).`), data: { ids: early } };
+      }
+
+      await this.model.update({ activated: false, terminationDate: date, updatedBy, updatedAt: new Date() }, { where, transaction });
+      await transaction.commit();
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+
+    const count = parsedIds.ids.length;
+    return this.deactivateUsers(parsedIds.ids, updatedBy, {
+      ok: `${count} funcionário(s) desligado(s).`,
+      pending: `${count} funcionário(s) desligado(s), mas os usuários deles não foram desativados (módulo de controle indisponível). Desative-os manualmente.`,
+    }, { deactivated: count });
+  }
+
+  /** Pede ao `control` a desativação dos usuários; se ele falhar, os funcionários vão em `pendingEmployeeIds` (o login já os recusa). */
+  private async deactivateUsers(ids: string[], updatedBy: string, messages: { ok: string; pending: string }, extra = {}) {
+    try {
+      const deactivatedUsers = await deactivateUsersByEmployee(ids, updatedBy);
+      return Response.ok(messages.ok, { ...extra, deactivatedUsers, pendingEmployeeIds: [] as string[] });
     } catch (error) {
       if (!(error instanceof ControlUnavailableError)) throw error;
-      return Response.ok(
-        "Funcionário desligado, mas o usuário dele não foi desativado (módulo de controle indisponível). Desative o usuário manualmente.",
-        { deactivatedUsers: [] as string[], pendingEmployeeIds: [id] }
-      );
+      return Response.ok(messages.pending, { ...extra, deactivatedUsers: [] as string[], pendingEmployeeIds: ids });
     }
   }
 

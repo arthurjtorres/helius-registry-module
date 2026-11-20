@@ -23,4 +23,10 @@ describe('parseIdList (consulta em lote)', () => {
     expect(parseIdList(ids)).toEqual({ error: `Máximo de ${MAX_LOOKUP_IDS} IDs por consulta.` });
     expect('ids' in parseIdList(ids.slice(0, MAX_LOOKUP_IDS))).toBe(true);
   });
+
+  it('aceita outro máximo (desligamento em lote: 5000)', () => {
+    const ids = Array.from({ length: MAX_LOOKUP_IDS + 1 }, (_, i) => `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`);
+    expect(parseIdList(ids)).toEqual({ error: `Máximo de ${MAX_LOOKUP_IDS} IDs por consulta.` });
+    expect(parseIdList(ids, 5000)).toEqual({ ids });
+  });
 });
