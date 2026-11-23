@@ -2,6 +2,8 @@ import express from "express";
 import cors from 'cors';
 import helmet from 'helmet';
 import router from "./routes";
+import connection from "./database/connection";
+import Response from "./utils/Response";
 import errorHandler from "./middlewares/ErrorHandler";
 import { buildCorsOptions, resolveAllowedOrigins } from "./utils/corsOptions";
 import "dotenv/config";
@@ -23,6 +25,13 @@ app.use(express.json({ limit: "1mb" }));
 
 app.use(router);
 app.get('/', (req, res) => res.status(200).send('Rodando cadastro aqui!'));
+// Healthcheck do Docker: público, sem dado; 503 se o banco não responde
+app.get('/health', (_req, res) => {
+  connection.authenticate().then(
+    () => res.status(200).json(Response.ok('ok')),
+    () => res.status(503).json({ status: 503, message: 'Banco de dados indisponível' }),
+  );
+});
 
 app.use(errorHandler);
 
