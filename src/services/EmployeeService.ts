@@ -12,6 +12,7 @@ import EmployeeBulkService, { activeEmploymentByPerson, activeEmploymentMessage,
 import { buildRegistration } from "../utils/EmployeeImport";
 import { parseIdList } from "../utils/IdList";
 import { deactivateUsersByEmployee, ControlUnavailableError } from "./integrations/UserService";
+import { inCompanyScope } from "../utils/AccessPolicy";
 
 /** Máximo de funcionários por desligamento em lote, igual à importação e à rota do `control`. */
 export const MAX_DEACTIVATE_IDS = 5000;
@@ -31,6 +32,12 @@ const parseTerminationDate = (value?: string): { date: string } | { error: strin
 
 /** Admissão até a data de rescisão (ou sem admissão). */
 const admittedBy = (admissionDate: unknown, date: string) => !admissionDate || date >= String(admissionDate).slice(0, 10);
+
+/** Filtro de empresa do escopo (T18); `null` = sem filtro. Fora do escopo vira "não encontrado" (404). */
+const scopeWhere = (scope: string[] | null) => (scope ? { fkCompanyId: { [Op.in]: scope } } : {});
+
+/** Empresa informada fora do escopo do usuário (T18, decisão 2). */
+const OUT_OF_SCOPE = "Empresa fora do seu escopo de acesso.";
 
 const INVALID_REGISTRATION = "Matrícula inválida: informe o número da chapa (ex.: 8598), com ou sem a sigla da empresa.";
 
@@ -61,11 +68,12 @@ class EmployeeService {
     );
   }
 
-  async createEmployee(data: EmployeeInterface) {
+  async createEmployee(data: EmployeeInterface, scope: string[] | null = null) {
     data.createdAt = new Date();
 
     const { error } = CreateValidationSchema.EmployeeValidation.validate(data);
     if (error) return Response.badRequest(error.message);
+    if (!inCompanyScope(scope, data.fkCompanyId)) return Response.forbidden(OUT_OF_SCOPE);
 
     const built = await this.registrationFor(data.registration, data.fkCompanyId);
     if (built.error) return built.error;
@@ -82,7 +90,7 @@ class EmployeeService {
    * Atualiza o funcionário. A empresa não muda pela edição (troca de empresa é demissão e
    * recontratação, T16/T20); a matrícula informada é remontada com a sigla da empresa atual.
    */
-  async updateEmployee(id: string, data: Partial<EmployeeInterface>) {
+  async updateEmployee(id: string, data: Partial<EmployeeInterface>, scope: string[] | null = null) {
 
     if (!id) return Response.badRequest("ID não informado");
     data.updatedAt = new Date();
@@ -90,7 +98,7 @@ class EmployeeService {
     const { error } = UpdateValidationSchema.EmployeeValidation.validate(data);
     if (error) return Response.badRequest(error.message);
 
-    const current = await this.model.findOne({ where: { employeeId: id, activated: true } });
+    const current = await this.model.findOne({ where: { employeeId: id, activated: true, ...scopeWhere(scope) } });
     if (!current) return Response.notFound("Funcionário não encontrado!");
 
     if (data.fkCompanyId && data.fkCompanyId !== current.fkCompanyId) {
@@ -132,13 +140,13 @@ class EmployeeService {
    * @param terminationDate Data de rescisão `AAAA-MM-DD` (padrão: hoje em Brasília); entre a admissão e amanhã.
    * @returns 200 com `{ deactivatedUsers, pendingEmployeeIds }`; 400 data inválida; 404 inexistente ou inativo.
    */
-  async deleteEmployee(id: string, updatedBy: string, terminationDate?: string) {
+  async deleteEmployee(id: string, updatedBy: string, terminationDate?: string, scope: string[] | null = null) {
     if (!id) return Response.badRequest("ID não informado");
     const parsed = parseTerminationDate(terminationDate);
     if ("error" in parsed) return Response.badRequest(parsed.error);
     const { date } = parsed;
 
-    const current = await this.model.findOne({ where: { employeeId: id, activated: true }, attributes: ["employeeId", "admissionDate"] });
+    const current = await this.model.findOne({ where: { employeeId: id, activated: true, ...scopeWhere(scope) }, attributes: ["employeeId", "admissionDate"] });
     if (!current) return Response.notFound("Funcionário não encontrado!");
     if (!admittedBy(current.admissionDate, date)) {
       return Response.badRequest("A data de rescisão não pode ser anterior à admissão.");
@@ -165,7 +173,7 @@ class EmployeeService {
    * @returns 200 com `{ deactivated, deactivatedUsers, pendingEmployeeIds }`; 409 `{ ids }` inexistentes ou
    *   inativos; 400 `{ ids }` com admissão posterior à data, ou entrada inválida. Nos erros, nada é gravado.
    */
-  async bulkDeactivate(ids: unknown, updatedBy: string, terminationDate?: unknown) {
+  async bulkDeactivate(ids: unknown, updatedBy: string, terminationDate?: unknown, scope: string[] | null = null) {
     const parsedIds = parseIdList(ids, MAX_DEACTIVATE_IDS);
     if ("error" in parsedIds) return Response.badRequest(parsedIds.error);
     const parsedDate = parseTerminationDate(terminationDate == null ? undefined : String(terminationDate));
@@ -174,7 +182,7 @@ class EmployeeService {
 
     const transaction = await db.transaction();
     try {
-      const where = { employeeId: { [Op.in]: parsedIds.ids }, activated: true };
+      const where = { employeeId: { [Op.in]: parsedIds.ids }, activated: true, ...scopeWhere(scope) };
       const found = await this.model.findAll({ where, attributes: ["employeeId", "admissionDate"], lock: true, transaction });
       const foundIds = new Set(found.map(e => e.employeeId));
       const missing = parsedIds.ids.filter(id => !foundIds.has(id));
@@ -219,10 +227,10 @@ class EmployeeService {
    * @param id Identificador do registro.
    * @param updatedBy Usuário autenticado que executa a operação.
    */
-  async reactivateEmployee(id: string, updatedBy: string) {
+  async reactivateEmployee(id: string, updatedBy: string, scope: string[] | null = null) {
     if (!id) return Response.badRequest("ID não informado");
 
-    const target = await this.model.findOne({ where: { employeeId: id, activated: false }, attributes: ["employeeId", "fkPersonId", "fkCompanyId"] });
+    const target = await this.model.findOne({ where: { employeeId: id, activated: false, ...scopeWhere(scope) }, attributes: ["employeeId", "fkPersonId", "fkCompanyId"] });
     if (!target) return Response.notFound("Funcionário não encontrado ou já ativo!");
     const employedAt = (await activeEmploymentByPerson([target.fkPersonId], target.fkCompanyId as string)).get(target.fkPersonId);
     if (employedAt) return Response.conflict(activeEmploymentMessage(employedAt));
@@ -236,11 +244,11 @@ class EmployeeService {
     return Response.ok("Funcionário reativado com sucesso!");
   }
 
-  async getEmployee(id: string) {
+  async getEmployee(id: string, scope: string[] | null = null) {
     if (!id) return Response.badRequest("ID do funcionário não informado.");
 
     const result = await this.model.findOne({
-      where: { employeeId: id, activated: true },
+      where: { employeeId: id, activated: true, ...scopeWhere(scope) },
       include: [
         { model: PersonModel, as: 'Person', where: { activated: true }, required: false },
         { model: CompanyModel, as: 'Company', where: { activated: true }, required: false },
@@ -254,7 +262,7 @@ class EmployeeService {
     return Response.ok("Funcionário encontrado!", result);
   }
 
-  async findEmployees(query: Partial<EmployeeInterface>) {
+  async findEmployees(query: Partial<EmployeeInterface>, scope: string[] | null = null) {
     const { error } = joi.object({ fkPersonId: joi.string().uuid(), fkCompanyId: joi.string().uuid() })
       .unknown(true).validate(query);
     if (error) return Response.badRequest(error.message);
@@ -268,6 +276,9 @@ class EmployeeService {
     if (query.fkPersonId) {
       where.fkPersonId = query.fkPersonId;
     }
+
+    if (query.fkCompanyId && !inCompanyScope(scope, query.fkCompanyId)) return Response.forbidden(OUT_OF_SCOPE);
+    Object.assign(where, scopeWhere(scope));
 
     if (query.fkCompanyId) {
       where.fkCompanyId = query.fkCompanyId;
@@ -296,8 +307,10 @@ class EmployeeService {
    * relatório por item. Ver `EmployeeBulkService`.
    * @param payload Empresa, usuário (do token) e lista de funcionários.
    * @param options `dryRun`: só valida, sem gravar.
+   * @param scope Empresas visíveis (T18); empresa fora → 403.
    */
-  async bulkInsert(payload: { companyId?: unknown; userId?: unknown; employees?: unknown }, options: ImportOptions = {}) {
+  async bulkInsert(payload: { companyId?: unknown; userId?: unknown; employees?: unknown }, options: ImportOptions = {}, scope: string[] | null = null) {
+    if (typeof payload.companyId === "string" && !inCompanyScope(scope, payload.companyId)) return Response.forbidden(OUT_OF_SCOPE);
     return new EmployeeBulkService().importEmployees(payload, options);
   }
 }
