@@ -2,7 +2,7 @@ import { NextFunction, Request, Response as ExpressResponse } from "express";
 import Response from "../utils/Response";
 import { JwtPayload } from "./Authentication";
 import { PermissionEnum } from "../database/models/enums/PermissionEnum";
-import { hasFullAccess, isServiceToken } from "../utils/AccessPolicy";
+import { hasFullAccess, isServiceToken, isSystemUser } from "../utils/AccessPolicy";
 
 /** Nome do módulo em `access_control.module.module_name`. */
 const CURRENT_MODULE = 'CADASTRO';
@@ -93,3 +93,12 @@ export const checkPermission = (requiredMenu: string, requiredAction?: Permissio
     );
     return denied ? deny(res, denied) : next();
   };
+
+/**
+ * Só o usuário `SISTEMA` passa (T18, decisão 1: escrita de empresa, grupo e corporação).
+ * Deve vir depois de `verifyToken`.
+ */
+export const onlySystemUser = (_req: Request, res: ExpressResponse, next: NextFunction) =>
+  isSystemUser(res.locals.user as JwtPayload | undefined)
+    ? next()
+    : deny(res, Response.forbidden("Somente o usuário de sistema pode alterar empresas, grupos e corporações."));

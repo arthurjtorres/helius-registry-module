@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { logError } from "../utils/logError";
 import Resp from "../utils/Response";
 import CompanyGroupService from "../services/CompanyGroupService";
+import { companyScope } from "../utils/AccessPolicy";
 
 class CompanyGroupController {
   private service = new CompanyGroupService();
@@ -68,7 +69,7 @@ class CompanyGroupController {
   async getCompanyGroup(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const result = await this.service.getCompanyGroup(id);
+      const result = await this.service.getCompanyGroup(id, companyScope(res.locals.user));
       return res.status(result.status).json(result);
     } catch (error) {
       logError("Erro em getCompanyGroup", error);
@@ -79,7 +80,7 @@ class CompanyGroupController {
 
   async findCompanyGroups(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await this.service.findCompanyGroups(req.query);
+      const result = await this.service.findCompanyGroups(req.query, companyScope(res.locals.user));
       return res.status(result.status).json(result);
     } catch (error) {
       logError("Erro em findCompanyGroups", error);
