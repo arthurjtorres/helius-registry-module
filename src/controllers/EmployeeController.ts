@@ -3,6 +3,7 @@ import { logError } from "../utils/logError";
 import Resp from "../utils/Response";
 import EmployeeService from "../services/EmployeeService";
 import { parseImportOptions } from "../utils/EmployeeUpsert";
+import { companyScope } from "../utils/AccessPolicy";
 
 class EmployeeController {
   private service = new EmployeeService();
@@ -14,7 +15,7 @@ class EmployeeController {
         ...req.body,
         createdBy: user.userId
       }
-      const result = await this.service.createEmployee(data);
+      const result = await this.service.createEmployee(data, companyScope(user));
       return res.status(result.status).json(result);
     } catch (error) {
       logError("Erro em createEmployee", error);
@@ -31,7 +32,7 @@ class EmployeeController {
         updatedBy: user.userId
       }
       const { id } = req.params;
-      const result = await this.service.updateEmployee(id, data);
+      const result = await this.service.updateEmployee(id, data, companyScope(user));
       return res.status(result.status).json(result);
     } catch (error) {
       logError("Erro em updateEmployee", error);
@@ -44,7 +45,7 @@ class EmployeeController {
     try {
       const { id } = req.params;
       const terminationDate = typeof req.query.terminationDate === 'string' ? req.query.terminationDate : undefined;
-      const result = await this.service.deleteEmployee(id, res.locals.user.userId, terminationDate);
+      const result = await this.service.deleteEmployee(id, res.locals.user.userId, terminationDate, companyScope(res.locals.user));
       return res.status(result.status).json(result);
     } catch (error) {
       logError("Erro em deleteEmployee", error);
@@ -56,7 +57,7 @@ class EmployeeController {
   /** POST /bulk-deactivate — demissão em lote `{ ids, terminationDate? }`, tudo ou nada (T19). */
   async bulkDeactivate(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await this.service.bulkDeactivate(req.body?.ids, res.locals.user.userId, req.body?.terminationDate);
+      const result = await this.service.bulkDeactivate(req.body?.ids, res.locals.user.userId, req.body?.terminationDate, companyScope(res.locals.user));
       return res.status(result.status).json(result);
     } catch (error) {
       logError("Erro em bulkDeactivate", error);
@@ -69,7 +70,7 @@ class EmployeeController {
   async reactivateEmployee(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const result = await this.service.reactivateEmployee(id, res.locals.user.userId);
+      const result = await this.service.reactivateEmployee(id, res.locals.user.userId, companyScope(res.locals.user));
       return res.status(result.status).json(result);
     } catch (error) {
       logError("Erro em reactivateEmployee", error);
@@ -81,7 +82,7 @@ class EmployeeController {
   async getEmployee(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const result = await this.service.getEmployee(id);
+      const result = await this.service.getEmployee(id, companyScope(res.locals.user));
       return res.status(result.status).json(result);
     } catch (error) {
       logError("Erro em getEmployee", error);
@@ -92,7 +93,7 @@ class EmployeeController {
 
   async findEmployees(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await this.service.findEmployees(req.query);
+      const result = await this.service.findEmployees(req.query, companyScope(res.locals.user));
       return res.status(result.status).json(result);
     } catch (error) {
       logError("Erro em findEmployees", error);
@@ -113,7 +114,7 @@ class EmployeeController {
       const resp = Resp.badRequest(parsed.error);
       return res.status(resp.status).json(resp);
     }
-    const result = await this.service.bulkInsert(data, parsed.options);
+    const result = await this.service.bulkInsert(data, parsed.options, companyScope(user));
     return res.status(result.status).json(result);
   } catch (error) {
     logError("Erro em bulkInsert", error);
