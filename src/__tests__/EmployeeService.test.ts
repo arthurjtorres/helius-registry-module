@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import { Op } from 'sequelize';
 
 const mockTx = { commit: jest.fn(), rollback: jest.fn() };
 const mocks = {
@@ -255,5 +256,44 @@ describe('bulkDeactivate (demissão em lote, T19)', () => {
     expect((await service.bulkDeactivate(ids, userId, '19/11/2026')).status).toBe(400);
     expect((await service.bulkDeactivate(ids, userId, '2999-01-01')).status).toBe(400);
     expect(mocks.employeeFindAll).not.toHaveBeenCalled();
+  });
+});
+
+describe('escopo de empresas (T18)', () => {
+  const other = randomUUID();
+  const scope = [companyId];
+  const scopedWhere = () => expect.objectContaining({ where: expect.objectContaining({ fkCompanyId: { [Op.in]: scope } }) });
+
+  it('create e bulk com empresa fora do escopo → 403, sem gravar', async () => {
+    expect((await service.createEmployee(createData({ fkCompanyId: other }), scope)).status).toBe(403);
+    expect((await service.bulkInsert({ companyId: other, userId, employees: [] }, {}, scope)).status).toBe(403);
+    expect(mocks.employeeCreate).not.toHaveBeenCalled();
+  });
+
+  it('GET com ?fkCompanyId fora do escopo → 403; sem filtro, restringe ao escopo', async () => {
+    expect((await service.findEmployees({ fkCompanyId: other }, scope)).status).toBe(403);
+    await service.findEmployees({}, scope);
+    expect(mocks.employeeFindAll).toHaveBeenCalledWith(scopedWhere());
+  });
+
+  it('by-id, update, delete e reactivate filtram pela empresa (fora → 404)', async () => {
+    expect((await service.getEmployee(employeeId, scope)).status).toBe(404);
+    expect((await service.updateEmployee(employeeId, { updatedBy: userId } as never, scope)).status).toBe(404);
+    expect((await service.deleteEmployee(employeeId, userId, undefined, scope)).status).toBe(404);
+    expect((await service.reactivateEmployee(employeeId, userId, scope)).status).toBe(404);
+    expect(mocks.employeeFindOne).toHaveBeenCalledTimes(4);
+    mocks.employeeFindOne.mock.calls.forEach(([arg]) => expect(arg).toEqual(scopedWhere()));
+    expect(mocks.employeeUpdate).not.toHaveBeenCalled();
+  });
+
+  it('bulk-deactivate: id fora do escopo conta como não encontrado (409)', async () => {
+    const res = await service.bulkDeactivate([employeeId], userId, undefined, scope);
+    expect(res.status).toBe(409);
+    expect(mocks.employeeFindAll).toHaveBeenCalledWith(scopedWhere());
+  });
+
+  it('sem escopo (null) não acrescenta filtro', async () => {
+    await service.findEmployees({}, null);
+    expect(mocks.employeeFindAll.mock.calls[0][0].where.fkCompanyId).toBeUndefined();
   });
 });
