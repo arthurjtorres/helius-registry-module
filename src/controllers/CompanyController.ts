@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { logError } from "../utils/logError";
 import Resp from "../utils/Response";
 import CompanyService from "../services/CompanyService";
+import { companyScope } from "../utils/AccessPolicy";
 
 class CompanyController {
   private service = new CompanyService();
@@ -69,7 +70,7 @@ class CompanyController {
   async getCompany(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const result = await this.service.getCompany(id);
+      const result = await this.service.getCompany(id, companyScope(res.locals.user));
       return res.status(result.status).json(result);
     } catch (error) {
       logError("Erro em getCompany", error);
@@ -81,7 +82,7 @@ class CompanyController {
   /** POST /lookup — consulta empresas por lista de IDs (corpo `{ ids }`). */
   async lookupCompanies(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await this.service.getCompaniesByIds(req.body?.ids);
+      const result = await this.service.getCompaniesByIds(req.body?.ids, companyScope(res.locals.user));
       return res.status(result.status).json(result);
     } catch (error) {
       logError("Erro em lookupCompanies", error);
@@ -92,7 +93,7 @@ class CompanyController {
 
   async findCompanies(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await this.service.findCompanies(req.query);
+      const result = await this.service.findCompanies(req.query, companyScope(res.locals.user));
       return res.status(result.status).json(result);
     } catch (error) {
       logError("Erro em findCompanies", error);

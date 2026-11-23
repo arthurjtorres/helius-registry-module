@@ -9,6 +9,9 @@ import { CompanyModel, CorporationModel, CompanyGroupModel } from "../database/m
 import CompanyInterface from "../database/interfaces/CompanyInterface";
 import { parseIdList } from "../utils/IdList";
 
+/** Filtro do escopo de empresas (T18); `null` = sem filtro. Fora do escopo = não encontrada. */
+const scopeWhere = (scope: string[] | null) => (scope ? { companyId: { [Op.in]: scope } } : {});
+
 class CompanyService {
   private model: ModelStatic<CompanyModel> = CompanyModel;
 
@@ -91,11 +94,11 @@ class CompanyService {
     return Response.ok("Empresa reativada com sucesso!");
   }
 
-  async getCompany(id: string) {
+  async getCompany(id: string, scope: string[] | null = null) {
     if (!id) return Response.badRequest("ID da empresa não informado.");
 
     const result = await this.model.findOne({
-      where: { companyId: id, activated: true },
+      where: { companyId: id, activated: true, ...scopeWhere(scope) },
       include: [
         { model: CorporationModel, as: 'Corporation', where: { activated: true }, required: false },
         { model: CompanyGroupModel, as: 'CompanyGroup', where: { activated: true }, required: false }
@@ -111,13 +114,14 @@ class CompanyService {
    * Responde 200 com a lista dos encontrados; IDs inexistentes ou inativos são omitidos
    * (lista vazia é resposta válida, não 404).
    * @param ids Lista de UUIDs no corpo da requisição (1 a 500).
+   * @param scope Empresas visíveis (T18); `null` (token de serviço ou `SISTEMA`) = sem filtro.
    */
-  async getCompaniesByIds(ids: unknown) {
+  async getCompaniesByIds(ids: unknown, scope: string[] | null = null) {
     const parsed = parseIdList(ids);
     if ("error" in parsed) return Response.badRequest(parsed.error);
 
     const result = await this.model.findAll({
-      where: { companyId: { [Op.in]: parsed.ids }, activated: true },
+      where: { companyId: { [Op.in]: scope ? parsed.ids.filter(id => scope.includes(id)) : parsed.ids }, activated: true },
       include: [
         { model: CorporationModel, as: 'Corporation', where: { activated: true }, required: false },
         { model: CompanyGroupModel, as: 'CompanyGroup', where: { activated: true }, required: false }
@@ -133,8 +137,8 @@ class CompanyService {
     companyCode?: string;
     fkCompanyCorporationId?: string;
     fkCompanyGroupId?: string;
-  }) {
-    const where: any = { activated: true };
+  }, scope: string[] | null = null) {
+    const where: any = { activated: true, ...scopeWhere(scope) };
 
     if (query.companyName) {
       where.companyName = { [Op.iLike]: `%${query.companyName}%` };
