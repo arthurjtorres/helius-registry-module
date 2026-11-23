@@ -8,6 +8,16 @@ import UpdateValidationSchema from "./validations/UpdateValidationSchema";
 import { CompanyGroupModel } from "../database/models";
 import CompanyGroupInterface from "../database/interfaces/CompanyGroupInterface";
 
+/**
+ * Grupos visíveis (T18, decisão 1): os grupos das empresas do escopo. `null` = sem filtro.
+ * Fora do escopo = não encontrado.
+ */
+const scopeWhere = async (scope: string[] | null) => {
+  if (!scope) return {};
+  const companies = await CompanyModel.findAll({ where: { companyId: { [Op.in]: scope } }, attributes: ["fkCompanyGroupId"] });
+  return { groupId: { [Op.in]: companies.map(c => c.fkCompanyGroupId).filter(Boolean) } };
+};
+
 class CompanyGroupService {
   private model: ModelStatic<CompanyGroupModel> = CompanyGroupModel;
 
@@ -73,17 +83,17 @@ class CompanyGroupService {
     return Response.ok("Grupo reativado com sucesso!");
   }
 
-  async getCompanyGroup(id: string) {
+  async getCompanyGroup(id: string, scope: string[] | null = null) {
     if (!id) return Response.badRequest("ID do grupo não informado.");
 
-    const result = await this.model.findOne({ where: { groupId: id, activated: true } });
+    const result = await this.model.findOne({ where: { groupId: id, activated: true, ...(await scopeWhere(scope)) } });
     if (!result) return Response.notFound("Grupo não encontrado!");
 
     return Response.ok("Grupo encontrado!", result);
   }
 
-  async findCompanyGroups(query: { groupName?: string }) {
-    const where: any = { activated: true };
+  async findCompanyGroups(query: { groupName?: string }, scope: string[] | null = null) {
+    const where: any = { activated: true, ...(await scopeWhere(scope)) };
 
     if (query.groupName) {
       where.groupName = { [Op.iLike]: `%${query.groupName}%` };
