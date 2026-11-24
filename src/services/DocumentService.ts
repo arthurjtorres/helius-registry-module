@@ -1,4 +1,5 @@
 import { ModelStatic, Op } from "sequelize";
+import { ListQuery, activeWhere } from "../utils/ActiveFilter";
 import Response from "../utils/Response";
 
 import CreateValidationSchema from "./validations/CreateValidationSchema";
@@ -106,8 +107,8 @@ class DocumentService {
     return Response.ok("Documento encontrado!", result);
   }
 
-  async findDocuments(query: Partial<DocumentInterface>) {
-    const where: any = { activated: true };
+  async findDocuments(query: Partial<DocumentInterface> & ListQuery) {
+    const where: any = { ...activeWhere(query) };
 
     if (query.documentType) {
       where.documentType = query.documentType;
@@ -128,7 +129,7 @@ class DocumentService {
     const result = await this.model.findAll({
       where,
       include: [
-        { model: PersonModel, as: 'Person', where: { activated: true }, required: false }
+        { model: PersonModel, as: 'Person', where: activeWhere(query), required: false }
       ],
     });
 

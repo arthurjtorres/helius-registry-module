@@ -1,4 +1,5 @@
 import { ModelStatic, Op } from "sequelize";
+import { ListQuery, activeWhere } from "../utils/ActiveFilter";
 import Response from "../utils/Response";
 import { EmployeeModel } from "../database/models";
 
@@ -87,8 +88,8 @@ class DepartmentService {
     departmentName?: string;
     departmentAlias?: string;
     departmentIndex?: number;
-  }) {
-    const where: any = { activated: true };
+  } & ListQuery) {
+    const where: any = { ...activeWhere(query) };
 
     if (query.departmentName) {
       where.departmentName = { [Op.iLike]: `%${query.departmentName}%` };

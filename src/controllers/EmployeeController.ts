@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { logError } from "../utils/logError";
+import { listQuery } from "../utils/ActiveFilter";
 import Resp from "../utils/Response";
 import EmployeeService from "../services/EmployeeService";
 import { parseImportOptions } from "../utils/EmployeeUpsert";
@@ -93,7 +94,7 @@ class EmployeeController {
 
   async findEmployees(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await this.service.findEmployees(req.query, companyScope(res.locals.user));
+      const result = await this.service.findEmployees(listQuery(req, res), companyScope(res.locals.user));
       return res.status(result.status).json(result);
     } catch (error) {
       logError("Erro em findEmployees", error);
