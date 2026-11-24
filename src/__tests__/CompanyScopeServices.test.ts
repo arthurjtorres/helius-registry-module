@@ -31,7 +31,8 @@ describe('CompanyService com escopo (T18)', () => {
     await service.findCompanies({}, [A]);
     expect(whereOf(mocks.companyFindAll).companyId).toEqual({ [Op.in]: [A] });
     expect((await service.getCompany(B, [A])).status).toBe(404);
-    expect(whereOf(mocks.companyFindOne).companyId).toEqual({ [Op.in]: [A] });
+    // regressão: o escopo não pode sobrescrever o id pedido (devolvia a 1ª empresa do escopo)
+    expect(whereOf(mocks.companyFindOne)[Op.and]).toEqual([{ companyId: B }, { companyId: { [Op.in]: [A] } }]);
     mocks.companyFindAll.mockClear();
     await service.findCompanies({}, null);
     expect(whereOf(mocks.companyFindAll).companyId).toBeUndefined();
@@ -58,7 +59,7 @@ describe('CompanyGroupService com escopo (T18)', () => {
 
   it('GET /:id de outro grupo → 404; null não consulta empresas', async () => {
     expect((await service.getCompanyGroup('g2', [])).status).toBe(404);
-    expect(whereOf(mocks.groupFindOne).groupId).toEqual({ [Op.in]: [] });
+    expect(whereOf(mocks.groupFindOne)[Op.and]).toEqual([{ groupId: 'g2' }, { groupId: { [Op.in]: [] } }]);
     mocks.companyFindAll.mockClear();
     await service.getCompanyGroup('g2', null);
     expect(mocks.companyFindAll).not.toHaveBeenCalled();
