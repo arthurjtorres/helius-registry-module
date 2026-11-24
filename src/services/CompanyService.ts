@@ -1,4 +1,5 @@
 import { ModelStatic, Op } from "sequelize";
+import { ListQuery, activeWhere } from "../utils/ActiveFilter";
 import Response from "../utils/Response";
 import { EmployeeModel } from "../database/models";
 
@@ -138,8 +139,8 @@ class CompanyService {
     companyCode?: string;
     fkCompanyCorporationId?: string;
     fkCompanyGroupId?: string;
-  }, scope: string[] | null = null) {
-    const where: any = { activated: true, ...scopeWhere(scope) };
+  } & ListQuery, scope: string[] | null = null) {
+    const where: any = { ...activeWhere(query), ...scopeWhere(scope) };
 
     if (query.companyName) {
       where.companyName = { [Op.iLike]: `%${query.companyName}%` };
@@ -164,8 +165,8 @@ class CompanyService {
     const result = await this.model.findAll({
       where,
       include: [
-        { model: CorporationModel, as: 'Corporation', where: { activated: true }, required: false },
-        { model: CompanyGroupModel, as: 'CompanyGroup', where: { activated: true }, required: false }
+        { model: CorporationModel, as: 'Corporation', where: activeWhere(query), required: false },
+        { model: CompanyGroupModel, as: 'CompanyGroup', where: activeWhere(query), required: false }
       ],
     });
 

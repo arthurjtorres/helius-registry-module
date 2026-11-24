@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { logError } from "../utils/logError";
+import { listQuery } from "../utils/ActiveFilter";
 import Resp from "../utils/Response";
 import CompanyGroupService from "../services/CompanyGroupService";
 import { companyScope } from "../utils/AccessPolicy";
@@ -80,7 +81,7 @@ class CompanyGroupController {
 
   async findCompanyGroups(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await this.service.findCompanyGroups(req.query, companyScope(res.locals.user));
+      const result = await this.service.findCompanyGroups(listQuery(req, res), companyScope(res.locals.user));
       return res.status(result.status).json(result);
     } catch (error) {
       logError("Erro em findCompanyGroups", error);

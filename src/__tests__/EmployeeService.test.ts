@@ -148,6 +148,22 @@ describe('vínculo ativo da pessoa (04 §6.2, regra 2)', () => {
     expect((await service.reactivateEmployee(employeeId, userId)).status).toBe(409);
     expect(mocks.employeeUpdate).not.toHaveBeenCalled();
   });
+
+  it('reactivateEmployee limpa a data de rescisão (T17, decisão 2)', async () => {
+    mocks.employeeFindOne.mockResolvedValue({ employeeId, fkPersonId: personId, fkCompanyId: companyId, activated: false });
+    mocks.employeeFindAll.mockResolvedValue([]);
+    mocks.employeeUpdate.mockResolvedValue([1]);
+    expect((await service.reactivateEmployee(employeeId, userId)).status).toBe(200);
+    expect(mocks.employeeUpdate.mock.calls[0][0]).toMatchObject({ activated: true, terminationDate: null });
+  });
+
+  it('findEmployees só tira o filtro de ativos com includeInactive autorizado (T17)', async () => {
+    mocks.employeeFindAll.mockResolvedValue([]);
+    await service.findEmployees({}, null);
+    expect(mocks.employeeFindAll.mock.calls[0][0].where.activated).toBe(true);
+    await service.findEmployees({ includeInactive: true }, null);
+    expect(mocks.employeeFindAll.mock.calls[1][0].where).not.toHaveProperty('activated');
+  });
 });
 
 describe('deleteEmployee (demissão, T20)', () => {
