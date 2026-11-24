@@ -98,7 +98,8 @@ class CompanyService {
     if (!id) return Response.badRequest("ID da empresa não informado.");
 
     const result = await this.model.findOne({
-      where: { companyId: id, activated: true, ...scopeWhere(scope) },
+      // Op.and: o filtro de escopo usa a mesma chave `companyId` e não pode sobrescrever o id
+      where: { activated: true, [Op.and]: [{ companyId: id }, scopeWhere(scope)] },
       include: [
         { model: CorporationModel, as: 'Corporation', where: { activated: true }, required: false },
         { model: CompanyGroupModel, as: 'CompanyGroup', where: { activated: true }, required: false }
