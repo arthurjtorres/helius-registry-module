@@ -1,4 +1,5 @@
 import { ModelStatic, Op } from "sequelize";
+import { ListQuery, activeWhere } from "../utils/ActiveFilter";
 import Response from "../utils/Response";
 import { CompanyModel } from "../database/models";
 
@@ -87,8 +88,8 @@ class CorporationService {
     corporationName?: string;
     corporationCode?: string;
     corporationAcronym?: string;
-  }) {
-    const where: any = { activated: true };
+  } & ListQuery) {
+    const where: any = { ...activeWhere(query) };
 
     if (query.corporationName) {
       where.corporationName = { [Op.iLike]: `%${query.corporationName}%` };

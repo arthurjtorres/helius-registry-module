@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { logError } from "../utils/logError";
+import { listQuery } from "../utils/ActiveFilter";
 import Resp from "../utils/Response";
 import DocumentService from "../services/DocumentService";
 
@@ -78,7 +79,7 @@ class DocumentController {
 
   async findDocuments(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await this.service.findDocuments(req.query);
+      const result = await this.service.findDocuments(listQuery(req, res));
       return res.status(result.status).json(result);
     } catch (error) {
       logError("Erro em findDocuments", error);

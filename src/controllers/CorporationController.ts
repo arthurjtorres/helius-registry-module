@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { logError } from "../utils/logError";
+import { listQuery } from "../utils/ActiveFilter";
 import Resp from "../utils/Response";
 import CorporationService from "../services/CorporationService";
 
@@ -78,7 +79,7 @@ class CorporationController {
 
   async findCorporations(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await this.service.findCorporations(req.query);
+      const result = await this.service.findCorporations(listQuery(req, res));
       return res.status(result.status).json(result);
     } catch (error) {
       logError("Erro em findCorporations", error);
