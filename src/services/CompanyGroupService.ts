@@ -86,7 +86,7 @@ class CompanyGroupService {
   async getCompanyGroup(id: string, scope: string[] | null = null) {
     if (!id) return Response.badRequest("ID do grupo não informado.");
 
-    const result = await this.model.findOne({ where: { groupId: id, activated: true, ...(await scopeWhere(scope)) } });
+    const result = await this.model.findOne({ where: { activated: true, [Op.and]: [{ groupId: id }, await scopeWhere(scope)] } }); // Op.and: escopo usa a mesma chave `groupId`
     if (!result) return Response.notFound("Grupo não encontrado!");
 
     return Response.ok("Grupo encontrado!", result);
