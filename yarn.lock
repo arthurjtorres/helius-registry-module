@@ -767,11 +767,6 @@
   resolved "https://registry.yarnpkg.com/@standard-schema/spec/-/spec-1.0.0.tgz#f193b73dc316c4170f2e82a881da0f550d551b9c"
   integrity sha512-m2bOd0f2RT9k8QJx1JN85cZYyH1RqFBdlwtkSlf4tBDYLCiiZnv1fIIwacK6cqwXavOydf0NPToMQgpKq+dVlA==
 
-"@standard-schema/spec@^1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@standard-schema/spec/-/spec-1.1.0.tgz#a79b55dbaf8604812f52d140b2c9ab41bc150bb8"
-  integrity sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==
-
 "@tsconfig/node10@^1.0.7":
   version "1.0.11"
   resolved "https://registry.yarnpkg.com/@tsconfig/node10/-/node10-1.0.11.tgz#6ee46400685f130e278128c7b38b7e031ff5b2f2"
@@ -2774,13 +2769,6 @@ joi-password-complexity@^5.2.0:
   resolved "https://registry.yarnpkg.com/joi-password-complexity/-/joi-password-complexity-5.2.0.tgz#5308f4e7c6c39ce0a6a050597883d5fd7f2800b4"
   integrity sha512-exQOcaKC4EuZwwNVQ/5/FcnCzdwdzjA2RPIrRgZXTjzkFhY5NUtP83SlcNSUK3OvbRFpjUq1FCzhHg/uqPg90g==
 
-joi-password@^4.3.0:
-  version "4.3.0"
-  resolved "https://registry.yarnpkg.com/joi-password/-/joi-password-4.3.0.tgz#17a6d7a10fa44d8de886487c6b76b57001d6980e"
-  integrity sha512-NxQq9LNvsFeLz8P04j1HC4gCdLhylNY84m7PFwz+hyaCpSqncUCUKyG+fOGb8q8Hl1O6+Sh+GsKiydFzglN83A==
-  dependencies:
-    joi "18.0.1"
-
 joi@*:
   version "18.0.1"
   resolved "https://registry.yarnpkg.com/joi/-/joi-18.0.1.tgz#1e1885d035cc6ca1624e81bf22112e7c1ee38e1b"
@@ -2793,19 +2781,6 @@ joi@*:
     "@hapi/tlds" "^1.1.1"
     "@hapi/topo" "^6.0.2"
     "@standard-schema/spec" "^1.0.0"
-
-joi@18.0.1, joi@^18.3.1:
-  version "18.3.2"
-  resolved "https://registry.yarnpkg.com/joi/-/joi-18.3.2.tgz#ca16b431106d9af32a0436aff474d3992230c788"
-  integrity sha512-iUivApKYw5GpZmq2Sy6El99j7noo8QSUFZlyQtr3HCkosC/b5wKF6/Y3teiHIlaM8WI38sAT3P+51rB0lhAhJA==
-  dependencies:
-    "@hapi/address" "^5.1.1"
-    "@hapi/formula" "^3.0.2"
-    "@hapi/hoek" "^11.0.7"
-    "@hapi/pinpoint" "^2.0.1"
-    "@hapi/tlds" "^1.1.1"
-    "@hapi/topo" "^6.0.2"
-    "@standard-schema/spec" "^1.1.0"
 
 joi@^17.13.9:
   version "17.13.9"
