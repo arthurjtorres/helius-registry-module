@@ -5,6 +5,7 @@ import router from "./routes";
 import connection from "./database/connection";
 import Response from "./utils/Response";
 import errorHandler from "./middlewares/ErrorHandler";
+import { createApiRateLimit } from "./middlewares/ApiRateLimit";
 import { buildCorsOptions, resolveAllowedOrigins } from "./utils/corsOptions";
 import "dotenv/config";
 
@@ -17,6 +18,8 @@ app.use(cors(buildCorsOptions(allowedOrigins)));
 // Cabeçalhos de segurança (remove X-Powered-By, nosniff etc.). O front só usa XHR com CORS
 // (inclusive para documentos), então o Cross-Origin-Resource-Policy padrão (same-origin) não o afeta.
 app.use(helmet());
+// Limite geral por usuário (token válido) ou IP, antes das rotas; /health e token de serviço isentos
+app.use(createApiRateLimit());
 
 // Importação de funcionários (até 5000 itens) precisa de corpo maior; registrado antes do global,
 // que não relê um corpo já processado. As demais rotas seguem com 1mb.
