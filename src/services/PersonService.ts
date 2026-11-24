@@ -1,4 +1,5 @@
 import { ModelStatic, Op } from "sequelize";
+import { ListQuery, activeWhere } from "../utils/ActiveFilter";
 import Response from "../utils/Response";
 import { EmployeeModel } from "../database/models";
 
@@ -93,8 +94,8 @@ class PersonService {
     return Response.ok("Pessoa encontrada!", result);
   }
 
-  async findPersons(query: Partial<PersonInterface>) {
-    const where: any = { activated: true };
+  async findPersons(query: Partial<PersonInterface> & ListQuery) {
+    const where: any = { ...activeWhere(query) };
 
     if (query.firstName) {
       where.firstName = { [Op.iLike]: `%${query.firstName}%` };

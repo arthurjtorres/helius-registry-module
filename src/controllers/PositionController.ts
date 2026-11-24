@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { logError } from "../utils/logError";
+import { listQuery } from "../utils/ActiveFilter";
 import Resp from "../utils/Response";
 import PositionService from "../services/PositionService";
 
@@ -78,7 +79,7 @@ class PositionController {
 
   async findPositions(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await this.service.findPositions(req.query);
+      const result = await this.service.findPositions(listQuery(req, res));
       return res.status(result.status).json(result);
     } catch (error) {
       logError("Erro em findPositions", error);

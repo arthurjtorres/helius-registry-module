@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { logError } from "../utils/logError";
+import { listQuery } from "../utils/ActiveFilter";
 import Resp from "../utils/Response";
 import SectorService from "../services/SectorService";
 
@@ -78,7 +79,7 @@ class SectorController {
 
   async findSectors(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await this.service.findSectors(req.query);
+      const result = await this.service.findSectors(listQuery(req, res));
       return res.status(result.status).json(result);
     } catch (error) {
       logError("Erro em findSectors", error);

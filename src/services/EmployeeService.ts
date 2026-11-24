@@ -1,4 +1,5 @@
 import { ModelStatic, Op } from "sequelize";
+import { ListQuery, activeWhere } from "../utils/ActiveFilter";
 import joi from "joi";
 
 import Response from "../utils/Response";
@@ -222,8 +223,9 @@ class EmployeeService {
   }
 
   /**
-   * Reativa um registro desativado (`activated = true`). Recusa (409) se a pessoa já tem
-   * outro funcionário ativo (`04` §6.2, regra 2).
+   * Reativa um registro desativado (`activated = true`) e limpa a `terminationDate`: reativar
+   * desfaz um desligamento indevido; recontratação é um novo registro (T17, decisão 2).
+   * Recusa (409) se a pessoa já tem outro funcionário ativo (`04` §6.2, regra 2).
    * @param id Identificador do registro.
    * @param updatedBy Usuário autenticado que executa a operação.
    */
@@ -236,7 +238,7 @@ class EmployeeService {
     if (employedAt) return Response.conflict(activeEmploymentMessage(employedAt));
 
     const [updated] = await this.model.update(
-      { activated: true, updatedBy, updatedAt: new Date() },
+      { activated: true, terminationDate: null, updatedBy, updatedAt: new Date() }, // desfaz o desligamento (T17, decisão 2)
       { where: { employeeId: id, activated: false } }
     );
     if (!updated) return Response.notFound("Funcionário não encontrado ou já ativo!");
@@ -262,12 +264,12 @@ class EmployeeService {
     return Response.ok("Funcionário encontrado!", result);
   }
 
-  async findEmployees(query: Partial<EmployeeInterface>, scope: string[] | null = null) {
+  async findEmployees(query: Partial<EmployeeInterface> & ListQuery, scope: string[] | null = null) {
     const { error } = joi.object({ fkPersonId: joi.string().uuid(), fkCompanyId: joi.string().uuid() })
       .unknown(true).validate(query);
     if (error) return Response.badRequest(error.message);
 
-    const where: any = { activated: true };
+    const where: any = { ...activeWhere(query) };
 
     if (query.registration) {
       where.registration = { [Op.iLike]: `%${query.registration}%` };
@@ -287,11 +289,11 @@ class EmployeeService {
     const result = await this.model.findAll({
       where,
       include: [
-        { model: PersonModel, as: 'Person', where: { activated: true }, required: false },
-        { model: CompanyModel, as: 'Company', where: { activated: true }, required: false },
-        { model: PositionModel, as: 'Position', where: { activated: true }, required: false },
-        { model: SectorModel, as: 'Sector', where: { activated: true }, required: false },
-        { model: DepartmentModel, as: 'Department', where: { activated: true }, required: false }
+        { model: PersonModel, as: 'Person', where: activeWhere(query), required: false },
+        { model: CompanyModel, as: 'Company', where: activeWhere(query), required: false },
+        { model: PositionModel, as: 'Position', where: activeWhere(query), required: false },
+        { model: SectorModel, as: 'Sector', where: activeWhere(query), required: false },
+        { model: DepartmentModel, as: 'Department', where: activeWhere(query), required: false }
       ],
     });
 

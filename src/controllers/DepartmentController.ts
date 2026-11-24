@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { logError } from "../utils/logError";
+import { listQuery } from "../utils/ActiveFilter";
 import Resp from "../utils/Response";
 import DepartmentService from "../services/DepartmentService";
 
@@ -78,7 +79,7 @@ class DepartmentController {
 
   async findDepartments(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await this.service.findDepartments(req.query);
+      const result = await this.service.findDepartments(listQuery(req, res));
       return res.status(result.status).json(result);
     } catch (error) {
       logError("Erro em findDepartments", error);
