@@ -46,7 +46,7 @@
     "@types/uuid": "^9.0.8",
     "jest": "^30.5.2",
     "nodemon": "^3.1.7",
-    "sequelize-cli": "^6.6.2",
+    "sequelize-cli": "^6.6.5",
     "ts-jest": "^29.4.15",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.4.5"
