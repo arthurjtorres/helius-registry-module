@@ -1,4 +1,4 @@
-import { ModelStatic, Op } from "sequelize";
+import { ModelStatic, Op, WhereAttributeHash } from "sequelize";
 import { ListQuery, activeWhere } from "../utils/ActiveFilter";
 import Response from "../utils/Response";
 
@@ -108,7 +108,7 @@ class DocumentService {
   }
 
   async findDocuments(query: Partial<DocumentInterface> & ListQuery) {
-    const where: any = { ...activeWhere(query) };
+    const where: WhereAttributeHash = { ...activeWhere(query) };
 
     if (query.documentType) {
       where.documentType = query.documentType;

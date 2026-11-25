@@ -1,4 +1,4 @@
-import { ModelStatic, Op } from "sequelize";
+import { ModelStatic, Op, WhereAttributeHash } from "sequelize";
 import { ListQuery, activeWhere } from "../utils/ActiveFilter";
 import Response from "../utils/Response";
 import { EmployeeModel } from "../database/models";
@@ -89,7 +89,7 @@ class DepartmentService {
     departmentAlias?: string;
     departmentIndex?: number;
   } & ListQuery) {
-    const where: any = { ...activeWhere(query) };
+    const where: WhereAttributeHash = { ...activeWhere(query) };
 
     if (query.departmentName) {
       where.departmentName = { [Op.iLike]: `%${query.departmentName}%` };

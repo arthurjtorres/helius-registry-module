@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
 import { logError } from "../utils/logError";
 import { listQuery } from "../utils/ActiveFilter";
 import Resp from "../utils/Response";
@@ -9,7 +9,7 @@ import { companyScope } from "../utils/AccessPolicy";
 class EmployeeController {
   private service = new EmployeeService();
 
-  async createEmployee(req: Request, res: Response, next: NextFunction) {
+  async createEmployee(req: Request, res: Response) {
     try {
       const user = res.locals.user;
       const data = {
@@ -25,7 +25,7 @@ class EmployeeController {
     }
   }
 
-  async updateEmployee(req: Request, res: Response, next: NextFunction) {
+  async updateEmployee(req: Request, res: Response) {
     try {
       const user = res.locals.user;
       const data = {
@@ -42,7 +42,7 @@ class EmployeeController {
     }
   }
 
-  async deleteEmployee(req: Request, res: Response, next: NextFunction) {
+  async deleteEmployee(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const terminationDate = typeof req.query.terminationDate === 'string' ? req.query.terminationDate : undefined;
@@ -56,7 +56,7 @@ class EmployeeController {
   }
 
   /** POST /bulk-deactivate — demissão em lote `{ ids, terminationDate? }`, tudo ou nada (T19). */
-  async bulkDeactivate(req: Request, res: Response, next: NextFunction) {
+  async bulkDeactivate(req: Request, res: Response) {
     try {
       const result = await this.service.bulkDeactivate(req.body?.ids, res.locals.user.userId, req.body?.terminationDate, companyScope(res.locals.user));
       return res.status(result.status).json(result);
@@ -68,7 +68,7 @@ class EmployeeController {
   }
 
   /** PATCH /:id/reactivate — reativa o registro (`activated = true`). */
-  async reactivateEmployee(req: Request, res: Response, next: NextFunction) {
+  async reactivateEmployee(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const result = await this.service.reactivateEmployee(id, res.locals.user.userId, companyScope(res.locals.user));
@@ -80,7 +80,7 @@ class EmployeeController {
     }
   }
 
-  async getEmployee(req: Request, res: Response, next: NextFunction) {
+  async getEmployee(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const result = await this.service.getEmployee(id, companyScope(res.locals.user));
@@ -92,7 +92,7 @@ class EmployeeController {
     }
   }
 
-  async findEmployees(req: Request, res: Response, next: NextFunction) {
+  async findEmployees(req: Request, res: Response) {
     try {
       const result = await this.service.findEmployees(listQuery(req, res), companyScope(res.locals.user));
       return res.status(result.status).json(result);
@@ -103,7 +103,7 @@ class EmployeeController {
     }
   }
 
-  async bulkInsert(req: Request, res: Response, next: NextFunction) {
+  async bulkInsert(req: Request, res: Response) {
   try {
     const user = res.locals.user;
       const data = {
