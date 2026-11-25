@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
 import { logError } from "../utils/logError";
 import { listQuery } from "../utils/ActiveFilter";
 import Resp from "../utils/Response";
@@ -7,7 +7,7 @@ import DepartmentService from "../services/DepartmentService";
 class DepartmentController {
   private service = new DepartmentService();
 
-  async createDepartment(req: Request, res: Response, next: NextFunction) {
+  async createDepartment(req: Request, res: Response) {
     try {
       const user = res.locals.user;
       const data = {
@@ -23,7 +23,7 @@ class DepartmentController {
     }
   }
 
-  async updateDepartment(req: Request, res: Response, next: NextFunction) {
+  async updateDepartment(req: Request, res: Response) {
     try {
       const user = res.locals.user;
       const data = {
@@ -40,7 +40,7 @@ class DepartmentController {
     }
   }
 
-  async deleteDepartment(req: Request, res: Response, next: NextFunction) {
+  async deleteDepartment(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const result = await this.service.deleteDepartment(id, res.locals.user.userId);
@@ -53,7 +53,7 @@ class DepartmentController {
   }
 
   /** PATCH /:id/reactivate — reativa o registro (`activated = true`). */
-  async reactivateDepartment(req: Request, res: Response, next: NextFunction) {
+  async reactivateDepartment(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const result = await this.service.reactivateDepartment(id, res.locals.user.userId);
@@ -65,7 +65,7 @@ class DepartmentController {
     }
   }
 
-  async getDepartment(req: Request, res: Response, next: NextFunction) {
+  async getDepartment(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const result = await this.service.getDepartment(id);
@@ -77,7 +77,7 @@ class DepartmentController {
     }
   }
 
-  async findDepartments(req: Request, res: Response, next: NextFunction) {
+  async findDepartments(req: Request, res: Response) {
     try {
       const result = await this.service.findDepartments(listQuery(req, res));
       return res.status(result.status).json(result);

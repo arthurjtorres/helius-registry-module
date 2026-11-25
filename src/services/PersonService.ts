@@ -1,4 +1,4 @@
-import { ModelStatic, Op } from "sequelize";
+import { ModelStatic, Op, WhereAttributeHash } from "sequelize";
 import { ListQuery, activeWhere } from "../utils/ActiveFilter";
 import Response from "../utils/Response";
 import { EmployeeModel } from "../database/models";
@@ -95,7 +95,7 @@ class PersonService {
   }
 
   async findPersons(query: Partial<PersonInterface> & ListQuery) {
-    const where: any = { ...activeWhere(query) };
+    const where: WhereAttributeHash = { ...activeWhere(query) };
 
     if (query.firstName) {
       where.firstName = { [Op.iLike]: `%${query.firstName}%` };

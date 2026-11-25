@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
 import { logError } from "../utils/logError";
 import { listQuery } from "../utils/ActiveFilter";
 import Resp from "../utils/Response";
@@ -7,7 +7,7 @@ import DocumentService from "../services/DocumentService";
 class DocumentController {
   private service = new DocumentService();
 
-  async createDocument(req: Request, res: Response, next: NextFunction) {
+  async createDocument(req: Request, res: Response) {
     try {
       const user = res.locals.user;
       const data = {
@@ -23,7 +23,7 @@ class DocumentController {
     }
   }
 
-  async updateDocument(req: Request, res: Response, next: NextFunction) {
+  async updateDocument(req: Request, res: Response) {
     try {
       const user = res.locals.user;
       const data = {
@@ -40,7 +40,7 @@ class DocumentController {
     }
   }
 
-  async deleteDocument(req: Request, res: Response, next: NextFunction) {
+  async deleteDocument(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const result = await this.service.deleteDocument(id, res.locals.user.userId);
@@ -53,7 +53,7 @@ class DocumentController {
   }
 
   /** PATCH /:id/reactivate — reativa o registro (`activated = true`). */
-  async reactivateDocument(req: Request, res: Response, next: NextFunction) {
+  async reactivateDocument(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const result = await this.service.reactivateDocument(id, res.locals.user.userId);
@@ -65,7 +65,7 @@ class DocumentController {
     }
   }
 
-  async getDocument(req: Request, res: Response, next: NextFunction) {
+  async getDocument(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const result = await this.service.getDocument(id);
@@ -77,7 +77,7 @@ class DocumentController {
     }
   }
 
-  async findDocuments(req: Request, res: Response, next: NextFunction) {
+  async findDocuments(req: Request, res: Response) {
     try {
       const result = await this.service.findDocuments(listQuery(req, res));
       return res.status(result.status).json(result);

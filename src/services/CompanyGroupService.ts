@@ -1,4 +1,4 @@
-import { ModelStatic, Op } from "sequelize";
+import { ModelStatic, Op, WhereAttributeHash } from "sequelize";
 import { ListQuery, activeWhere } from "../utils/ActiveFilter";
 import Response from "../utils/Response";
 import { CompanyModel } from "../database/models";
@@ -94,7 +94,7 @@ class CompanyGroupService {
   }
 
   async findCompanyGroups(query: { groupName?: string } & ListQuery, scope: string[] | null = null) {
-    const where: any = { ...activeWhere(query), ...(await scopeWhere(scope)) };
+    const where: WhereAttributeHash = { ...activeWhere(query), ...(await scopeWhere(scope)) };
 
     if (query.groupName) {
       where.groupName = { [Op.iLike]: `%${query.groupName}%` };
