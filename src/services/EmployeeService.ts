@@ -1,4 +1,4 @@
-import { ModelStatic, Op } from "sequelize";
+import { ModelStatic, Op, WhereAttributeHash } from "sequelize";
 import { ListQuery, activeWhere } from "../utils/ActiveFilter";
 import joi from "joi";
 
@@ -6,7 +6,7 @@ import Response from "../utils/Response";
 import CreateValidationSchema from "./validations/CreateValidationSchema";
 import UpdateValidationSchema from "./validations/UpdateValidationSchema";
 
-import db, { EmployeeModel, PersonModel, CompanyModel, PositionModel, SectorModel, DepartmentModel, DocumentModel } from "../database/models";
+import db, { EmployeeModel, PersonModel, CompanyModel, PositionModel, SectorModel, DepartmentModel } from "../database/models";
 import EmployeeInterface from "../database/interfaces/EmployeeInterface";
 
 import EmployeeBulkService, { activeEmploymentByPerson, activeEmploymentMessage, ImportOptions } from "./EmployeeBulkService";
@@ -269,7 +269,7 @@ class EmployeeService {
       .unknown(true).validate(query);
     if (error) return Response.badRequest(error.message);
 
-    const where: any = { ...activeWhere(query) };
+    const where: WhereAttributeHash = { ...activeWhere(query) };
 
     if (query.registration) {
       where.registration = { [Op.iLike]: `%${query.registration}%` };

@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
 import { logError } from "../utils/logError";
 import { listQuery } from "../utils/ActiveFilter";
 import Resp from "../utils/Response";
@@ -8,7 +8,7 @@ import { companyScope } from "../utils/AccessPolicy";
 class CompanyGroupController {
   private service = new CompanyGroupService();
 
-  async createCompanyGroup(req: Request, res: Response, next: NextFunction) {
+  async createCompanyGroup(req: Request, res: Response) {
     try {
       const user = res.locals.user;
       const data = {
@@ -25,7 +25,7 @@ class CompanyGroupController {
     }
   }
 
-  async updateCompanyGroup(req: Request, res: Response, next: NextFunction) {
+  async updateCompanyGroup(req: Request, res: Response) {
     try {
       const user = res.locals.user;
       const data = {
@@ -42,7 +42,7 @@ class CompanyGroupController {
     }
   }
 
-  async deleteCompanyGroup(req: Request, res: Response, next: NextFunction) {
+  async deleteCompanyGroup(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const result = await this.service.deleteCompanyGroup(id, res.locals.user.userId);
@@ -55,7 +55,7 @@ class CompanyGroupController {
   }
 
   /** PATCH /:id/reactivate — reativa o registro (`activated = true`). */
-  async reactivateCompanyGroup(req: Request, res: Response, next: NextFunction) {
+  async reactivateCompanyGroup(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const result = await this.service.reactivateCompanyGroup(id, res.locals.user.userId);
@@ -67,7 +67,7 @@ class CompanyGroupController {
     }
   }
 
-  async getCompanyGroup(req: Request, res: Response, next: NextFunction) {
+  async getCompanyGroup(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const result = await this.service.getCompanyGroup(id, companyScope(res.locals.user));
@@ -79,7 +79,7 @@ class CompanyGroupController {
     }
   }
 
-  async findCompanyGroups(req: Request, res: Response, next: NextFunction) {
+  async findCompanyGroups(req: Request, res: Response) {
     try {
       const result = await this.service.findCompanyGroups(listQuery(req, res), companyScope(res.locals.user));
       return res.status(result.status).json(result);

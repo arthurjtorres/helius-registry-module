@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
 import { logError } from "../utils/logError";
 import { listQuery } from "../utils/ActiveFilter";
 import Resp from "../utils/Response";
@@ -8,7 +8,7 @@ import { companyScope } from "../utils/AccessPolicy";
 class CompanyController {
   private service = new CompanyService();
 
-  async createCompany(req: Request, res: Response, next: NextFunction) {
+  async createCompany(req: Request, res: Response) {
     try {
       const user = res.locals.user;
       const data = {
@@ -25,7 +25,7 @@ class CompanyController {
     }
   }
 
-  async updateCompany(req: Request, res: Response, next: NextFunction) {
+  async updateCompany(req: Request, res: Response) {
     try {
       const user = res.locals.user;
       const data = {
@@ -43,7 +43,7 @@ class CompanyController {
     }
   }
 
-  async deleteCompany(req: Request, res: Response, next: NextFunction) {
+  async deleteCompany(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const result = await this.service.deleteCompany(id, res.locals.user.userId);
@@ -56,7 +56,7 @@ class CompanyController {
   }
 
   /** PATCH /:id/reactivate — reativa o registro (`activated = true`). */
-  async reactivateCompany(req: Request, res: Response, next: NextFunction) {
+  async reactivateCompany(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const result = await this.service.reactivateCompany(id, res.locals.user.userId);
@@ -68,7 +68,7 @@ class CompanyController {
     }
   }
 
-  async getCompany(req: Request, res: Response, next: NextFunction) {
+  async getCompany(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const result = await this.service.getCompany(id, companyScope(res.locals.user));
@@ -81,7 +81,7 @@ class CompanyController {
   }
 
   /** POST /lookup — consulta empresas por lista de IDs (corpo `{ ids }`). */
-  async lookupCompanies(req: Request, res: Response, next: NextFunction) {
+  async lookupCompanies(req: Request, res: Response) {
     try {
       const result = await this.service.getCompaniesByIds(req.body?.ids, companyScope(res.locals.user));
       return res.status(result.status).json(result);
@@ -92,7 +92,7 @@ class CompanyController {
     }
   }
 
-  async findCompanies(req: Request, res: Response, next: NextFunction) {
+  async findCompanies(req: Request, res: Response) {
     try {
       const result = await this.service.findCompanies(listQuery(req, res), companyScope(res.locals.user));
       return res.status(result.status).json(result);

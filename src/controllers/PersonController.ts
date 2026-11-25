@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
 import { logError } from "../utils/logError";
 import { listQuery } from "../utils/ActiveFilter";
 import Resp from "../utils/Response";
@@ -7,7 +7,7 @@ import PersonService from "../services/PersonService";
 class PersonController {
   private service = new PersonService();
 
-  async createPerson(req: Request, res: Response, next: NextFunction) {
+  async createPerson(req: Request, res: Response) {
     try {
       const user = res.locals.user;
       const data = {
@@ -23,7 +23,7 @@ class PersonController {
     }
   }
 
-  async updatePerson(req: Request, res: Response, next: NextFunction) {
+  async updatePerson(req: Request, res: Response) {
     try {
       const user = res.locals.user;
       const data = {
@@ -40,7 +40,7 @@ class PersonController {
     }
   }
 
-  async deletePerson(req: Request, res: Response, next: NextFunction) {
+  async deletePerson(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const result = await this.service.deletePerson(id, res.locals.user.userId);
@@ -53,7 +53,7 @@ class PersonController {
   }
 
   /** PATCH /:id/reactivate — reativa o registro (`activated = true`). */
-  async reactivatePerson(req: Request, res: Response, next: NextFunction) {
+  async reactivatePerson(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const result = await this.service.reactivatePerson(id, res.locals.user.userId);
@@ -65,7 +65,7 @@ class PersonController {
     }
   }
 
-  async getPerson(req: Request, res: Response, next: NextFunction) {
+  async getPerson(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const result = await this.service.getPerson(id);
@@ -77,7 +77,7 @@ class PersonController {
     }
   }
 
-  async findPersons(req: Request, res: Response, next: NextFunction) {
+  async findPersons(req: Request, res: Response) {
     try {
       const result = await this.service.findPersons(listQuery(req, res));
       return res.status(result.status).json(result);

@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
 import { logError } from "../utils/logError";
 import { listQuery } from "../utils/ActiveFilter";
 import Resp from "../utils/Response";
@@ -7,7 +7,7 @@ import CorporationService from "../services/CorporationService";
 class CorporationController {
   private service = new CorporationService();
 
-  async createCorporation(req: Request, res: Response, next: NextFunction) {
+  async createCorporation(req: Request, res: Response) {
     try {
       const user = res.locals.user;
       const data = {
@@ -23,7 +23,7 @@ class CorporationController {
     }
   }
 
-  async updateCorporation(req: Request, res: Response, next: NextFunction) {
+  async updateCorporation(req: Request, res: Response) {
     try {
       const user = res.locals.user;
       const data = {
@@ -40,7 +40,7 @@ class CorporationController {
     }
   }
 
-  async deleteCorporation(req: Request, res: Response, next: NextFunction) {
+  async deleteCorporation(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const result = await this.service.deleteCorporation(id, res.locals.user.userId);
@@ -53,7 +53,7 @@ class CorporationController {
   }
 
   /** PATCH /:id/reactivate — reativa o registro (`activated = true`). */
-  async reactivateCorporation(req: Request, res: Response, next: NextFunction) {
+  async reactivateCorporation(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const result = await this.service.reactivateCorporation(id, res.locals.user.userId);
@@ -65,7 +65,7 @@ class CorporationController {
     }
   }
 
-  async getCorporation(req: Request, res: Response, next: NextFunction) {
+  async getCorporation(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const result = await this.service.getCorporation(id);
@@ -77,7 +77,7 @@ class CorporationController {
     }
   }
 
-  async findCorporations(req: Request, res: Response, next: NextFunction) {
+  async findCorporations(req: Request, res: Response) {
     try {
       const result = await this.service.findCorporations(listQuery(req, res));
       return res.status(result.status).json(result);
