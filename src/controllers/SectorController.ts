@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
 import { logError } from "../utils/logError";
 import { listQuery } from "../utils/ActiveFilter";
 import Resp from "../utils/Response";
@@ -7,7 +7,7 @@ import SectorService from "../services/SectorService";
 class SectorController {
   private service = new SectorService();
 
-  async createSector(req: Request, res: Response, next: NextFunction) {
+  async createSector(req: Request, res: Response) {
     try {
       const user = res.locals.user;
       const data = {
@@ -23,7 +23,7 @@ class SectorController {
     }
   }
 
-  async updateSector(req: Request, res: Response, next: NextFunction) {
+  async updateSector(req: Request, res: Response) {
     try {
       const user = res.locals.user;
       const data = {
@@ -40,7 +40,7 @@ class SectorController {
     }
   }
 
-  async deleteSector(req: Request, res: Response, next: NextFunction) {
+  async deleteSector(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const result = await this.service.deleteSector(id, res.locals.user.userId);
@@ -53,7 +53,7 @@ class SectorController {
   }
 
   /** PATCH /:id/reactivate — reativa o registro (`activated = true`). */
-  async reactivateSector(req: Request, res: Response, next: NextFunction) {
+  async reactivateSector(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const result = await this.service.reactivateSector(id, res.locals.user.userId);
@@ -65,7 +65,7 @@ class SectorController {
     }
   }
 
-  async getSector(req: Request, res: Response, next: NextFunction) {
+  async getSector(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const result = await this.service.getSector(id);
@@ -77,7 +77,7 @@ class SectorController {
     }
   }
 
-  async findSectors(req: Request, res: Response, next: NextFunction) {
+  async findSectors(req: Request, res: Response) {
     try {
       const result = await this.service.findSectors(listQuery(req, res));
       return res.status(result.status).json(result);

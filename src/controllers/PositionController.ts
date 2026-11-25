@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
 import { logError } from "../utils/logError";
 import { listQuery } from "../utils/ActiveFilter";
 import Resp from "../utils/Response";
@@ -7,7 +7,7 @@ import PositionService from "../services/PositionService";
 class PositionController {
   private service = new PositionService();
 
-  async createPosition(req: Request, res: Response, next: NextFunction) {
+  async createPosition(req: Request, res: Response) {
     try {
       const user = res.locals.user;
       const data = {
@@ -23,7 +23,7 @@ class PositionController {
     }
   }
 
-  async updatePosition(req: Request, res: Response, next: NextFunction) {
+  async updatePosition(req: Request, res: Response) {
     try {
       const user = res.locals.user;
       const data = {
@@ -40,7 +40,7 @@ class PositionController {
     }
   }
 
-  async deletePosition(req: Request, res: Response, next: NextFunction) {
+  async deletePosition(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const result = await this.service.deletePosition(id, res.locals.user.userId);
@@ -53,7 +53,7 @@ class PositionController {
   }
 
   /** PATCH /:id/reactivate — reativa o registro (`activated = true`). */
-  async reactivatePosition(req: Request, res: Response, next: NextFunction) {
+  async reactivatePosition(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const result = await this.service.reactivatePosition(id, res.locals.user.userId);
@@ -65,7 +65,7 @@ class PositionController {
     }
   }
 
-  async getPosition(req: Request, res: Response, next: NextFunction) {
+  async getPosition(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const result = await this.service.getPosition(id);
@@ -77,7 +77,7 @@ class PositionController {
     }
   }
 
-  async findPositions(req: Request, res: Response, next: NextFunction) {
+  async findPositions(req: Request, res: Response) {
     try {
       const result = await this.service.findPositions(listQuery(req, res));
       return res.status(result.status).json(result);
