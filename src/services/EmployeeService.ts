@@ -10,7 +10,8 @@ import db, { EmployeeModel, PersonModel, CompanyModel, PositionModel, SectorMode
 import EmployeeInterface from "../database/interfaces/EmployeeInterface";
 
 import EmployeeBulkService, { activeEmploymentByPerson, activeEmploymentMessage, ImportOptions } from "./EmployeeBulkService";
-import { buildRegistration } from "../utils/EmployeeImport";
+import { buildRegistration, splitName } from "../utils/EmployeeImport";
+import { toDateOnly } from "../utils/EmployeeUpsert";
 import { parseIdList } from "../utils/IdList";
 import { deactivateUsersByEmployee, ControlUnavailableError } from "./integrations/UserService";
 import { inCompanyScope } from "../utils/AccessPolicy";
@@ -90,14 +91,17 @@ class EmployeeService {
   /**
    * Atualiza o funcionário. A empresa não muda pela edição (troca de empresa é demissão e
    * recontratação, T16/T20); a matrícula informada é remontada com a sigla da empresa atual.
+   * `fullName` e `birthDate` são da pessoa e são gravados na mesma transação (T27).
+   * @returns 200; 400 dados inválidos; 404 inexistente ou inativo; 409 matrícula ocupada ou alteração em pessoa inativa.
    */
-  async updateEmployee(id: string, data: Partial<EmployeeInterface>, scope: string[] | null = null) {
+  async updateEmployee(id: string, input: Partial<EmployeeInterface> & { fullName?: string; birthDate?: string }, scope: string[] | null = null) {
 
     if (!id) return Response.badRequest("ID não informado");
-    data.updatedAt = new Date();
+    input.updatedAt = new Date();
 
-    const { error } = UpdateValidationSchema.EmployeeValidation.validate(data);
+    const { error } = UpdateValidationSchema.EmployeeValidation.validate(input);
     if (error) return Response.badRequest(error.message);
+    const { fullName, birthDate, ...data } = input;
 
     const current = await this.model.findOne({ where: { employeeId: id, activated: true, ...scopeWhere(scope) } });
     if (!current) return Response.notFound("Funcionário não encontrado!");
@@ -114,9 +118,35 @@ class EmployeeService {
       data.registration = built.registration;
     }
 
-    const [updated] = await this.model.update(data, { where: { employeeId: id, activated: true } });
+    // só o que mudou: reenviar o mesmo nome não deve refazer a divisão em nome e sobrenome
+    const personPatch: { fullName?: string; firstName?: string; lastName?: string; birthDate?: string } = {};
+    if (fullName !== undefined || birthDate !== undefined) {
+      const person = await PersonModel.findOne({ where: { personId: current.fkPersonId }, attributes: ["personId", "fullName", "birthDate", "activated"] });
+      if (!person) return Response.notFound("Pessoa do funcionário não encontrada!");
+      const name = fullName?.trim();
+      if (name && name !== person.fullName) Object.assign(personPatch, { fullName: name, ...splitName(name) });
+      if (birthDate && birthDate !== toDateOnly(person.birthDate)) personPatch.birthDate = birthDate;
+      if (!person.activated && Object.keys(personPatch).length) {
+        return Response.conflict("A pessoa deste funcionário está inativa; reative o cadastro dela antes de editar os dados pessoais.");
+      }
+    }
 
-    if (!updated) return Response.notFound("Funcionário não encontrado!");
+    const transaction = await db.transaction();
+    try {
+      const [updated] = await this.model.update(data, { where: { employeeId: id, activated: true }, transaction });
+      if (!updated) {
+        await transaction.rollback();
+        return Response.notFound("Funcionário não encontrado!");
+      }
+      if (Object.keys(personPatch).length) {
+        await PersonModel.update({ ...personPatch, updatedBy: data.updatedBy, updatedAt: data.updatedAt },
+          { where: { personId: current.fkPersonId, activated: true }, transaction });
+      }
+      await transaction.commit();
+    } catch (err) {
+      await transaction.rollback();
+      throw err;
+    }
 
     const result = await this.model.findOne({
       where: { employeeId: id, activated: true },
@@ -225,6 +255,7 @@ class EmployeeService {
   /**
    * Reativa um registro desativado (`activated = true`) e limpa a `terminationDate`: reativar
    * desfaz um desligamento indevido; recontratação é um novo registro (T17, decisão 2).
+   * Se a pessoa estiver inativa, é reativada na mesma transação (T27); os documentos não.
    * Recusa (409) se a pessoa já tem outro funcionário ativo (`04` §6.2, regra 2).
    * @param id Identificador do registro.
    * @param updatedBy Usuário autenticado que executa a operação.
@@ -237,11 +268,24 @@ class EmployeeService {
     const employedAt = (await activeEmploymentByPerson([target.fkPersonId], target.fkCompanyId as string)).get(target.fkPersonId);
     if (employedAt) return Response.conflict(activeEmploymentMessage(employedAt));
 
-    const [updated] = await this.model.update(
-      { activated: true, terminationDate: null, updatedBy, updatedAt: new Date() }, // desfaz o desligamento (T17, decisão 2)
-      { where: { employeeId: id, activated: false } }
-    );
-    if (!updated) return Response.notFound("Funcionário não encontrado ou já ativo!");
+    const transaction = await db.transaction();
+    try {
+      const now = new Date();
+      const [updated] = await this.model.update(
+        { activated: true, terminationDate: null, updatedBy, updatedAt: now }, // desfaz o desligamento (T17, decisão 2)
+        { where: { employeeId: id, activated: false }, transaction }
+      );
+      if (!updated) {
+        await transaction.rollback();
+        return Response.notFound("Funcionário não encontrado ou já ativo!");
+      }
+      await PersonModel.update({ activated: true, updatedBy, updatedAt: now },
+        { where: { personId: target.fkPersonId, activated: false }, transaction });
+      await transaction.commit();
+    } catch (err) {
+      await transaction.rollback();
+      throw err;
+    }
 
     return Response.ok("Funcionário reativado com sucesso!");
   }

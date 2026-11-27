@@ -73,6 +73,10 @@ const DocumentValidation = Validation.DocumentValidation.fork(
   activated: joi.forbidden(),
 });
 
+/** `AAAA-MM-DD` de uma data que existe (o `joi.date()` aceitaria 31 de fevereiro). */
+const dateOnly = joi.string().custom((v: string, helpers) =>
+  /^\d{4}-\d{2}-\d{2}$/.test(v) && !isNaN(Date.parse(v)) && new Date(v).toISOString().startsWith(v) ? v : helpers.error("any.invalid"));
+
 const EmployeeValidation = Validation.EmployeeValidation.fork(
   Object.keys(Validation.EmployeeValidation.describe().keys),
   (schema) => schema.optional()
@@ -80,6 +84,9 @@ const EmployeeValidation = Validation.EmployeeValidation.fork(
   updatedAt: joi.date().required(),
   updatedBy: joi.string().required(),
   activated: joi.forbidden(),
+  // dados da pessoa, editados pela tela do funcionário (T27); nome e sobrenome, como na importação
+  fullName: joi.string().trim().pattern(/\S+\s+\S+/),
+  birthDate: dateOnly,
 });
 
 export = {

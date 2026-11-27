@@ -8,6 +8,8 @@ const mocks = {
   employeeFindAll: jest.fn(),
   employeeCreate: jest.fn(),
   employeeUpdate: jest.fn(),
+  personFindOne: jest.fn(),
+  personUpdate: jest.fn(),
 };
 
 jest.mock('../database/models', () => ({
@@ -20,7 +22,11 @@ jest.mock('../database/models', () => ({
     create: (...a: unknown[]) => mocks.employeeCreate(...a),
     update: (...a: unknown[]) => mocks.employeeUpdate(...a),
   },
-  PersonModel: {}, PositionModel: {}, SectorModel: {}, DepartmentModel: {}, DocumentModel: {},
+  PersonModel: {
+    findOne: (...a: unknown[]) => mocks.personFindOne(...a),
+    update: (...a: unknown[]) => mocks.personUpdate(...a),
+  },
+  PositionModel: {}, SectorModel: {}, DepartmentModel: {}, DocumentModel: {},
 }));
 const mockDeactivateUsers = jest.fn();
 jest.mock('../services/integrations/UserService', () => ({
@@ -311,5 +317,73 @@ describe('escopo de empresas (T18)', () => {
   it('sem escopo (null) não acrescenta filtro', async () => {
     await service.findEmployees({}, null);
     expect(mocks.employeeFindAll.mock.calls[0][0].where.fkCompanyId).toBeUndefined();
+  });
+});
+
+describe('pessoa do funcionário (T27)', () => {
+  const personId = randomUUID();
+  const person = { personId, fullName: 'ZZ_TEST_ Maria da Silva', birthDate: '1990-01-31', activated: true };
+  const current = { employeeId, fkPersonId: personId, fkCompanyId: companyId, activated: true };
+  const update = (over: Record<string, unknown>) => ({ updatedBy: userId, ...over }) as never;
+
+  beforeEach(() => {
+    mocks.employeeFindOne.mockResolvedValue(current);
+    mocks.personFindOne.mockResolvedValue(person);
+  });
+
+  it('reactivateEmployee reativa a pessoa inativa na mesma transação', async () => {
+    mocks.employeeFindOne.mockResolvedValue({ ...current, activated: false });
+    expect((await service.reactivateEmployee(employeeId, userId)).status).toBe(200);
+    const [values, opts] = mocks.personUpdate.mock.calls[0];
+    expect(values).toMatchObject({ activated: true, updatedBy: userId });
+    expect(opts).toEqual({ where: { personId, activated: false }, transaction: mockTx });
+    expect(mocks.employeeUpdate.mock.calls[0][1].transaction).toBe(mockTx);
+    expect(mockTx.commit).toHaveBeenCalled();
+  });
+
+  it('updateEmployee grava nome e nascimento na pessoa, não no funcionário', async () => {
+    const res = await service.updateEmployee(employeeId, update({ fullName: ' ZZ_TEST_ Maria Souza ', birthDate: '1991-02-01' }));
+    expect(res.status).toBe(200);
+    const [values, opts] = mocks.personUpdate.mock.calls[0];
+    expect(values).toMatchObject({ fullName: 'ZZ_TEST_ Maria Souza', firstName: 'ZZ_TEST_', lastName: 'Maria Souza', birthDate: '1991-02-01', updatedBy: userId });
+    expect(opts).toEqual({ where: { personId, activated: true }, transaction: mockTx });
+    expect(mocks.employeeUpdate.mock.calls[0][0]).not.toHaveProperty('fullName');
+    expect(mocks.employeeUpdate.mock.calls[0][0]).not.toHaveProperty('birthDate');
+    expect(mockTx.commit).toHaveBeenCalled();
+  });
+
+  it('dados iguais aos cadastrados não alteram a pessoa', async () => {
+    const res = await service.updateEmployee(employeeId, update({ fullName: person.fullName, birthDate: person.birthDate }));
+    expect(res.status).toBe(200);
+    expect(mocks.personUpdate).not.toHaveBeenCalled();
+  });
+
+  it('pessoa inativa sem mudança nos dados dela não impede a edição', async () => {
+    mocks.personFindOne.mockResolvedValue({ ...person, activated: false });
+    const res = await service.updateEmployee(employeeId, update({ fullName: person.fullName, birthDate: person.birthDate }));
+    expect(res.status).toBe(200);
+    expect(mocks.personFindOne.mock.calls[0][0].where).toEqual({ personId });
+    expect(mocks.personUpdate).not.toHaveBeenCalled();
+  });
+
+  it('pessoa inativa com dados alterados: 409, sem gravar nada', async () => {
+    mocks.personFindOne.mockResolvedValue({ ...person, activated: false });
+    expect((await service.updateEmployee(employeeId, update({ birthDate: '1991-02-01' }))).status).toBe(409);
+    expect(mocks.employeeUpdate).not.toHaveBeenCalled();
+    expect(mocks.personUpdate).not.toHaveBeenCalled();
+  });
+
+  it('400 para nome sem sobrenome ou data inexistente', async () => {
+    expect((await service.updateEmployee(employeeId, update({ fullName: 'Maria' }))).status).toBe(400);
+    expect((await service.updateEmployee(employeeId, update({ birthDate: '1991-02-31' }))).status).toBe(400);
+    expect((await service.updateEmployee(employeeId, update({ birthDate: '01/02/1991' }))).status).toBe(400);
+    expect(mocks.employeeUpdate).not.toHaveBeenCalled();
+  });
+
+  it('falha na pessoa desfaz a transação', async () => {
+    mocks.personUpdate.mockRejectedValue(new Error('x'));
+    await expect(service.updateEmployee(employeeId, update({ birthDate: '1991-02-01' }))).rejects.toThrow('x');
+    expect(mockTx.rollback).toHaveBeenCalled();
+    expect(mockTx.commit).not.toHaveBeenCalled();
   });
 });
